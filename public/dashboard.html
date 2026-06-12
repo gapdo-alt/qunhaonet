@@ -10,116 +10,316 @@
 <body>
   <header class="site">
     <a class="logo" href="/">群<span>号</span></a>
-    <nav><a href="#" id="logoutBtn">退出登录</a></nav>
+    <nav>
+      <a href="#profile">群主资料</a>
+      <a href="#" id="logoutBtn">退出登录</a>
+    </nav>
   </header>
 
-  <main class="page narrow">
-    <div class="card">
-      <h2 class="title">我的群号</h2>
-      <p class="dash-code" id="codeDisplay">--------</p>
+  <main class="page" style="max-width:640px">
 
-      <label>展示页链接（推荐分享给群成员）</label>
-      <div class="link-row">
-        <span class="url" id="pageUrl">…</span>
-        <button type="button" data-copy="pageUrl">复制</button>
-      </div>
-
-      <label>图片直链（可嵌入论坛 / 博客 / 文档）</label>
-      <div class="link-row">
-        <span class="url" id="imageUrl">…</span>
-        <button type="button" data-copy="imageUrl">复制</button>
-      </div>
-
-      <div class="preview-box" id="previewBox">
-        <div class="empty">暂无二维码</div>
-      </div>
-
-      <div class="upload-row">
-        <input type="file" id="fileInput" accept="image/png,image/jpeg,image/webp">
-        <button type="button" id="uploadBtn">上传 / 替换二维码</button>
-      </div>
-      <p class="meta-line" id="metaLine"></p>
-      <p class="msg" id="msg" style="text-align:center"></p>
+    <div class="section-head">
+      <h2>我的群号 <span id="countLabel" style="color:var(--muted);font-size:14px"></span></h2>
+      <button type="button" id="newCodeBtn">+ 新建群号</button>
     </div>
+
+    <div class="create-panel" id="createPanel" hidden>
+      <label>第一步：从 8 个数字中选一个（选定后不可更改）</label>
+      <div class="candidates" id="candidates"></div>
+      <button type="button" class="refresh-link" id="refreshCandBtn">换一批</button>
+
+      <label for="groupName">第二步：群名称（显示在群页面上）</label>
+      <input type="text" id="groupName" maxlength="30" placeholder="例如：HDR 技术交流群"
+             style="width:100%;padding:12px 14px;font-size:15px;border:1px solid var(--border);border-radius:10px;background:transparent;color:var(--text);outline:none">
+
+      <div style="display:flex;gap:10px;margin-top:20px">
+        <button type="button" id="createBtn">创建</button>
+        <button type="button" class="btn ghost" id="cancelCreateBtn">取消</button>
+      </div>
+      <p class="msg" id="createMsg"></p>
+    </div>
+
+    <div id="codeList"></div>
+
+    <div class="card" id="profile" style="margin-top:32px">
+      <h2 class="title" style="text-align:left;font-size:18px">群主资料</h2>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:4px">
+        群二维码失效时，访客可通过「联系群主」看到以下信息
+      </p>
+      <div class="profile-grid" style="margin-top:14px">
+        <div class="field">
+          <label for="wechatId">微信号</label>
+          <input type="text" id="wechatId" maxlength="50" placeholder="选填">
+        </div>
+        <button type="button" id="saveProfileBtn">保存</button>
+      </div>
+      <div class="profile-grid" style="margin-top:18px">
+        <div class="field">
+          <label>微信二维码</label>
+          <img class="wechat-qr-thumb" id="wechatQrThumb" alt="" hidden>
+          <span id="wechatQrEmpty" style="font-size:13px;color:var(--muted)">未上传</span>
+        </div>
+        <button type="button" id="wechatQrBtn">上传 / 替换</button>
+        <input type="file" id="wechatQrInput" accept="image/png,image/jpeg,image/webp" hidden>
+      </div>
+      <p class="msg" id="profileMsg"></p>
+    </div>
+
   </main>
 
-  <script>
-    let meta = null;
+  <input type="file" id="qrFileInput" accept="image/*" hidden>
 
-    function setMsg(text, ok) {
-      const el = document.getElementById('msg');
+  <script src="/assets/vendor/jsQR.js"></script>
+  <script src="/assets/vendor/qrcode.js"></script>
+  <script src="/assets/qr-tools.js"></script>
+  <script>
+    let state = { codes: [], max: 5, host: location.host };
+    let uploadTarget = null; // 当前正在上传的群号
+
+    const $ = (id) => document.getElementById(id);
+    const esc = (s) => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+    function chipHtml(platform) {
+      if (platform === 'wechat') return '<span class="chip wechat">微信群</span>';
+      if (platform === 'feishu') return '<span class="chip feishu">飞书群</span>';
+      return '<span class="chip none">未上传</span>';
+    }
+
+    function shareRow(label, value) {
+      return `
+        <label>${label}</label>
+        <div class="link-row">
+          <span class="url">${esc(value)}</span>
+          <button type="button" onclick="copyText(this, '${esc(value)}')">复制</button>
+        </div>`;
+    }
+
+    function copyText(btn, text) {
+      navigator.clipboard.writeText(text).then(() => {
+        const old = btn.textContent;
+        btn.textContent = '已复制';
+        setTimeout(() => (btn.textContent = old), 1200);
+      });
+    }
+
+    function renderCodes() {
+      $('countLabel').textContent = `（${state.codes.length}/${state.max}）`;
+      $('newCodeBtn').style.display = state.codes.length >= state.max ? 'none' : '';
+
+      const list = $('codeList');
+      if (!state.codes.length) {
+        list.innerHTML = '<div class="card" style="text-align:center;color:var(--muted)">还没有群号，点击右上角「新建群号」开始</div>';
+        return;
+      }
+      list.innerHTML = state.codes.map((c) => `
+        <div class="code-card" data-code="${c.code}">
+          <div class="head">
+            <span class="gname">${esc(c.name)}</span>
+            ${chipHtml(c.platform)}
+            <span class="gcode">${c.code}</span>
+          </div>
+          <div class="qr-preview">
+            ${c.updatedAt
+              ? `<img alt="二维码" src="/i/${c.code}?v=${c.updatedAt}">`
+              : '<div class="empty">暂无群二维码</div>'}
+          </div>
+          <div class="actions">
+            <button type="button" onclick="pickUpload('${c.code}')">上传 / 替换二维码</button>
+            <a class="btn ghost" href="/a/${c.code}" download="qunhao-${c.code}.png">下载永久二维码</a>
+          </div>
+          ${shareRow('直链', c.pageUrl)}
+          ${shareRow('嵌入图片的链接', c.imageUrl)}
+          ${shareRow('分享文字', c.shareText)}
+          <p class="meta-line">${c.updatedAt ? '最后更新：' + new Date(c.updatedAt).toLocaleString('zh-CN') : '上传群二维码后，链接立即生效'}</p>
+          <p class="msg" id="msg-${c.code}" style="text-align:center"></p>
+        </div>`).join('');
+    }
+
+    function setCardMsg(code, text, ok) {
+      const el = $('msg-' + code);
+      if (el) { el.textContent = text; el.className = 'msg ' + (ok ? 'ok' : 'error'); }
+    }
+
+    async function loadCodes() {
+      const res = await fetch('/api/codes');
+      if (res.status === 401) { location.href = '/login'; return; }
+      const data = await res.json();
+      state.codes = data.codes;
+      state.max = data.max;
+      state.host = data.host;
+      renderCodes();
+    }
+
+    /* ===== 单步上传：点按钮 → 选图 → 自动解析并上传 ===== */
+    function pickUpload(code) {
+      uploadTarget = code;
+      $('qrFileInput').value = '';
+      $('qrFileInput').click();
+    }
+
+    $('qrFileInput').addEventListener('change', async () => {
+      const file = $('qrFileInput').files[0];
+      const code = uploadTarget;
+      if (!file || !code) return;
+
+      setCardMsg(code, '正在识别二维码…', true);
+      try {
+        const content = await QrTools.decodeQrFromFile(file);
+        if (!content) { setCardMsg(code, '未能识别图片中的二维码，请换一张更清晰的图', false); return; }
+
+        const platform = QrTools.detectPlatform(content);
+        if (!platform) { setCardMsg(code, '仅支持微信群或飞书群二维码（识别到的内容不属于这两类）', false); return; }
+
+        setCardMsg(code, '识别成功（' + (platform === 'wechat' ? '微信群' : '飞书群') + '），正在生成并上传…', true);
+        const png = await QrTools.renderQrPng(content, platform);
+
+        const form = new FormData();
+        form.append('groupUrl', content);
+        form.append('file', png, 'qr-c.png');
+        const res = await fetch('/api/codes/' + code + '/upload', { method: 'POST', body: form });
+        const data = await res.json();
+        if (res.ok) {
+          await loadCodes();
+          setCardMsg(code, '已更新，所有链接立即生效', true);
+        } else {
+          setCardMsg(code, data.error || '上传失败', false);
+        }
+      } catch (e) {
+        setCardMsg(code, '处理失败，请重试', false);
+      }
+    });
+
+    /* ===== 新建群号 ===== */
+    let candidateToken = '';
+    let selectedCode = '';
+
+    async function loadCandidates() {
+      const box = $('candidates');
+      box.innerHTML = '<button type="button" class="code-opt" disabled>加载中…</button>';
+      selectedCode = '';
+      const res = await fetch('/api/codes/candidates');
+      if (res.status === 401) { location.href = '/login'; return; }
+      const data = await res.json();
+      candidateToken = data.token;
+      state.host = data.host;
+      box.innerHTML = '';
+      for (const code of data.codes) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'code-opt';
+        btn.textContent = code;
+        btn.onclick = () => {
+          box.querySelectorAll('.code-opt').forEach((b) => b.classList.remove('selected'));
+          btn.classList.add('selected');
+          selectedCode = code;
+        };
+        box.appendChild(btn);
+      }
+    }
+
+    $('newCodeBtn').onclick = () => {
+      $('createPanel').hidden = false;
+      $('newCodeBtn').disabled = true;
+      loadCandidates();
+    };
+    $('cancelCreateBtn').onclick = () => {
+      $('createPanel').hidden = true;
+      $('newCodeBtn').disabled = false;
+    };
+    $('refreshCandBtn').onclick = loadCandidates;
+
+    $('createBtn').onclick = async () => {
+      const msg = $('createMsg');
+      const name = $('groupName').value.trim();
+      msg.textContent = '';
+      if (!selectedCode) { msg.textContent = '请先选择一个群号'; msg.className = 'msg error'; return; }
+      if (!name) { msg.textContent = '请填写群名称'; msg.className = 'msg error'; return; }
+
+      $('createBtn').disabled = true;
+      try {
+        // 浏览器渲染永久二维码 A（内容为展示页链接，与群号互锁）
+        const pngA = await QrTools.renderQrPng('https://' + state.host + '/' + selectedCode, 'qunhao');
+        const form = new FormData();
+        form.append('code', selectedCode);
+        form.append('token', candidateToken);
+        form.append('name', name);
+        form.append('file', pngA, 'qr-a.png');
+
+        const res = await fetch('/api/codes', { method: 'POST', body: form });
+        const data = await res.json();
+        if (res.ok) {
+          $('createPanel').hidden = true;
+          $('newCodeBtn').disabled = false;
+          $('groupName').value = '';
+          await loadCodes();
+        } else {
+          msg.textContent = data.error || '创建失败';
+          msg.className = 'msg error';
+          if (res.status === 409 || res.status === 410) loadCandidates();
+        }
+      } catch {
+        msg.textContent = '网络错误，请重试';
+        msg.className = 'msg error';
+      } finally {
+        $('createBtn').disabled = false;
+      }
+    };
+
+    /* ===== 群主资料 ===== */
+    function setProfileMsg(text, ok) {
+      const el = $('profileMsg');
       el.textContent = text;
       el.className = 'msg ' + (ok ? 'ok' : 'error');
     }
 
-    function render() {
-      document.getElementById('codeDisplay').textContent = meta.code;
-      document.getElementById('pageUrl').textContent = meta.pageUrl;
-      document.getElementById('imageUrl').textContent = meta.imageUrl;
-
-      const box = document.getElementById('previewBox');
-      if (meta.hasImage) {
-        box.innerHTML = '<img alt="二维码预览" src="/i/' + meta.code + '?v=' + meta.updatedAt + '">';
-        document.getElementById('metaLine').textContent =
-          '最后更新：' + new Date(meta.updatedAt).toLocaleString('zh-CN');
-      } else {
-        box.innerHTML = '<div class="empty">暂无二维码</div>';
-        document.getElementById('metaLine').textContent = '上传二维码后，链接立即生效';
+    async function loadProfile() {
+      const res = await fetch('/api/profile');
+      if (!res.ok) return;
+      const data = await res.json();
+      $('wechatId').value = data.wechatId || '';
+      if (data.hasWechatQr) {
+        $('wechatQrThumb').src = '/api/profile/wechat-qr?v=' + Date.now();
+        $('wechatQrThumb').hidden = false;
+        $('wechatQrEmpty').hidden = true;
       }
     }
 
-    async function loadMeta() {
-      const res = await fetch('/api/qr/meta');
-      if (res.status === 401) { location.href = '/login'; return; }
-      meta = await res.json();
-      render();
-    }
-
-    document.querySelectorAll('[data-copy]').forEach((btn) => {
-      btn.onclick = async () => {
-        const text = document.getElementById(btn.dataset.copy).textContent;
-        await navigator.clipboard.writeText(text);
-        const old = btn.textContent;
-        btn.textContent = '已复制';
-        setTimeout(() => (btn.textContent = old), 1200);
-      };
-    });
-
-    document.getElementById('uploadBtn').onclick = async () => {
-      const input = document.getElementById('fileInput');
-      const file = input.files && input.files[0];
-      if (!file) { setMsg('请先选择图片文件', false); return; }
-      if (file.size > 2 * 1024 * 1024) { setMsg('文件不能超过 2MB', false); return; }
-
-      const btn = document.getElementById('uploadBtn');
-      btn.disabled = true;
-      setMsg('上传中…', true);
-      try {
-        const form = new FormData();
-        form.append('file', file);
-        const res = await fetch('/api/qr/upload', { method: 'POST', body: form });
-        const data = await res.json();
-        if (res.ok) {
-          setMsg('上传成功，所有链接已更新', true);
-          input.value = '';
-          await loadMeta();
-        } else {
-          setMsg(data.error || '上传失败', false);
-        }
-      } catch {
-        setMsg('网络错误，请重试', false);
-      } finally {
-        btn.disabled = false;
-      }
+    $('saveProfileBtn').onclick = async () => {
+      const res = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ wechatId: $('wechatId').value }),
+      });
+      setProfileMsg(res.ok ? '已保存' : '保存失败', res.ok);
     };
 
-    document.getElementById('logoutBtn').onclick = async (e) => {
+    $('wechatQrBtn').onclick = () => { $('wechatQrInput').value = ''; $('wechatQrInput').click(); };
+    $('wechatQrInput').addEventListener('change', async () => {
+      const file = $('wechatQrInput').files[0];
+      if (!file) return;
+      setProfileMsg('上传中…', true);
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch('/api/profile/wechat-qr', { method: 'POST', body: form });
+      if (res.ok) {
+        setProfileMsg('已上传', true);
+        $('wechatQrThumb').src = '/api/profile/wechat-qr?v=' + Date.now();
+        $('wechatQrThumb').hidden = false;
+        $('wechatQrEmpty').hidden = true;
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setProfileMsg(data.error || '上传失败', false);
+      }
+    });
+
+    $('logoutBtn').onclick = async (e) => {
       e.preventDefault();
       await fetch('/api/auth/logout', { method: 'POST' });
       location.href = '/';
     };
 
-    loadMeta();
+    loadCodes();
+    loadProfile();
   </script>
 </body>
 </html>

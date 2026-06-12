@@ -1,14 +1,15 @@
 import type { Env } from '../../src/lib/env';
 import { isValidCode } from '../../src/lib/codes';
 
-const CACHE_CONTROL = 'public, max-age=300';
+// 二维码 A 永久不变，可长缓存
+const CACHE_CONTROL = 'public, max-age=86400';
 
-/** GET /i/{code} — 二维码 C 图片直链（URL 永远不变，内容随替换更新） */
+/** GET /a/{code} — 二维码 A 图片（内容为展示页链接，与群号互锁，永不变） */
 export const onRequestGet: PagesFunction<Env> = async (ctx) => {
   const code = ctx.params.code;
   if (!isValidCode(code)) return new Response('Not found', { status: 404 });
 
-  const object = await ctx.env.QR_BUCKET.get(`qr-c/${code}.png`);
+  const object = await ctx.env.QR_BUCKET.get(`qr-a/${code}.png`);
   if (!object) return new Response('Not found', { status: 404 });
 
   const etag = object.httpEtag;

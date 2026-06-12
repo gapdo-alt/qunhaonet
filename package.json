@@ -14,5 +14,9 @@
     "@cloudflare/workers-types": "^4.20260610.0",
     "typescript": "^5.8.0",
     "wrangler": "^4.0.0"
+  },
+  "dependencies": {
+    "jsqr": "^1.4.0",
+    "qrcode-generator": "^2.0.4"
   }
 }

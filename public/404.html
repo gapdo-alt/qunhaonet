@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>群号 - 永久不变的群链接</title>
-  <meta name="description" content="输入 5 位群号直达群聊；为你的群生成永久不变的链接与二维码，群码过期随时更换。">
+  <title>页面不存在 - 群号</title>
+  <meta name="robots" content="noindex">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/assets/style.css">
 </head>
@@ -17,41 +17,23 @@
     </nav>
   </header>
 
-  <main class="page">
-    <section class="hero">
-      <h1>输入群号<em>直达群聊</em></h1>
-      <p class="sub">一个永远不变的 5 位数字，二维码过期随时更换，链接永远有效。</p>
+  <main class="page narrow">
+    <div class="card" style="text-align:center">
+      <h2 class="title">页面不存在</h2>
+      <p style="color:var(--muted);font-size:14px;line-height:1.8">
+        群号是一个永久不变的 5 位数字群链接。<br>
+        输入群号即可直达群聊。
+      </p>
 
-      <form class="search-box" id="searchForm">
+      <form class="search-box" id="searchForm" style="margin-top:24px">
         <input type="text" id="searchInput" inputmode="numeric" maxlength="5"
                placeholder="输入 5 位群号" autocomplete="off" aria-label="群号">
         <button type="submit">前往</button>
       </form>
       <p class="msg error" id="searchMsg" style="text-align:center"></p>
 
-      <div class="cta">
-        <a class="btn ghost" href="/register">领取我的群号</a>
-      </div>
-    </section>
-
-    <section class="features">
-      <div class="feature">
-        <h3>专属 5 位群号</h3>
-        <p>注册后从 8 个随机数字中挑选，每个账号最多 5 个群号，例如 <strong>88888</strong>。</p>
-      </div>
-      <div class="feature">
-        <h3>永久二维码</h3>
-        <p>每个群号生成一张永久二维码，印在海报、写进文章，永远有效。</p>
-      </div>
-      <div class="feature">
-        <h3>群码随时更换</h3>
-        <p>上传新群码后自动识别微信群 / 飞书群，统一重绘，所有链接立即更新。</p>
-      </div>
-      <div class="feature">
-        <h3>失效有兜底</h3>
-        <p>群页面自带「联系群主」入口，展示群主微信号或微信二维码。</p>
-      </div>
-    </section>
+      <a class="btn block" href="/" style="margin-top:8px">返回首页</a>
+    </div>
   </main>
 
   <footer class="site">qunhao.net · 基于 Cloudflare 全球网络</footer>

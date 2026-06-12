@@ -5,6 +5,8 @@
   "exclude": [
     "/",
     "/index.html",
+    "/intro",
+    "/intro.html",
     "/register",
     "/register.html",
     "/login",

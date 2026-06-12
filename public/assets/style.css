@@ -261,3 +261,145 @@ footer.site {
   font-size: 13px;
   color: var(--muted);
 }
+
+/* ===== v2 ===== */
+
+/* 主页搜索框 */
+.search-box {
+  display: flex;
+  gap: 10px;
+  max-width: 420px;
+  margin: 32px auto 0;
+}
+.search-box input {
+  flex: 1;
+  padding: 14px 18px;
+  font-size: 20px;
+  letter-spacing: 4px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--text);
+  outline: none;
+  min-width: 0;
+}
+.search-box input:focus { border-color: var(--accent); }
+.search-box button { padding: 12px 28px; border-radius: 12px; flex-shrink: 0; }
+
+/* 平台徽标 */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+  color: #fff;
+}
+.chip.wechat { background: #07C160; }
+.chip.feishu { background: #3370FF; }
+.chip.none { background: var(--muted); }
+
+/* 控制台：群号卡片 */
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 28px 0 14px;
+}
+.section-head h2 { font-size: 18px; }
+
+.code-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-bottom: 18px;
+}
+.code-card .head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.code-card .head .gname { font-size: 17px; font-weight: 700; flex: 1; min-width: 120px; }
+.code-card .head .gcode {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.code-card .qr-preview {
+  text-align: center;
+  margin-top: 16px;
+}
+.code-card .qr-preview img {
+  width: 100%;
+  max-width: 220px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #fff;
+}
+.code-card .qr-preview .empty {
+  max-width: 220px;
+  aspect-ratio: 1;
+  margin: 0 auto;
+  border: 2px dashed var(--border);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  font-size: 14px;
+}
+.code-card .actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+.code-card .actions .btn,
+.code-card .actions button { padding: 9px 18px; font-size: 14px; }
+
+/* 创建面板 */
+.create-panel {
+  background: var(--card);
+  border: 1.5px dashed var(--accent);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-bottom: 18px;
+}
+.create-panel .candidates { margin-top: 4px; }
+
+/* 资料卡 */
+.profile-grid {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+.profile-grid .field { flex: 1; min-width: 200px; }
+.profile-grid input[type="text"] {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 15px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  outline: none;
+}
+.profile-grid input[type="text"]:focus { border-color: var(--accent); }
+.wechat-qr-thumb {
+  width: 88px;
+  height: 88px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #fff;
+}

@@ -15,13 +15,10 @@
 
   <main class="page narrow">
     <div class="card">
-      <h2 class="title">注册并选择你的群号</h2>
-
-      <label>第一步：从 5 个数字中选一个（选定后不可更改）</label>
-      <div class="candidates" id="candidates">
-        <button type="button" class="code-opt" disabled>加载中…</button>
-      </div>
-      <button type="button" class="refresh-link" id="refreshBtn">换一批</button>
+      <h2 class="title">注册账号</h2>
+      <p style="text-align:center;color:var(--muted);font-size:13px;margin-bottom:8px">
+        注册后可在控制台创建最多 5 个群号
+      </p>
 
       <form id="registerForm">
         <label for="email">邮箱</label>
@@ -42,37 +39,8 @@
   </main>
 
   <script>
-    // 如启用 Turnstile：填入你的 sitekey，并取消 README 中说明的相应步骤
+    // 如启用 Turnstile：填入你的 sitekey（详见 README）
     const TURNSTILE_SITE_KEY = '';
-
-    let candidateToken = '';
-    let selectedCode = '';
-
-    async function loadCandidates() {
-      const box = document.getElementById('candidates');
-      box.innerHTML = '<button type="button" class="code-opt" disabled>加载中…</button>';
-      selectedCode = '';
-      try {
-        const res = await fetch('/api/codes/candidates');
-        const data = await res.json();
-        candidateToken = data.token;
-        box.innerHTML = '';
-        for (const code of data.codes) {
-          const btn = document.createElement('button');
-          btn.type = 'button';
-          btn.className = 'code-opt';
-          btn.textContent = code;
-          btn.onclick = () => {
-            box.querySelectorAll('.code-opt').forEach(b => b.classList.remove('selected'));
-            btn.classList.add('selected');
-            selectedCode = code;
-          };
-          box.appendChild(btn);
-        }
-      } catch {
-        box.innerHTML = '<button type="button" class="code-opt" disabled>加载失败，请刷新</button>';
-      }
-    }
 
     function setMsg(text, ok) {
       const el = document.getElementById('msg');
@@ -80,17 +48,11 @@
       el.className = 'msg ' + (ok ? 'ok' : 'error');
     }
 
-    document.getElementById('refreshBtn').onclick = loadCandidates;
-
     document.getElementById('registerForm').onsubmit = async (e) => {
       e.preventDefault();
-      if (!selectedCode) { setMsg('请先选择一个群号', false); return; }
-
       const body = {
         email: document.getElementById('email').value,
         password: document.getElementById('password').value,
-        code: selectedCode,
-        token: candidateToken,
       };
       if (TURNSTILE_SITE_KEY && window.turnstile) {
         body.turnstileToken = window.turnstile.getResponse();
@@ -106,11 +68,9 @@
         });
         const data = await res.json();
         if (res.ok) {
-          setMsg('注册成功，正在进入控制台…', true);
           location.href = '/dashboard';
         } else {
           setMsg(data.error || '注册失败', false);
-          if (res.status === 409 || res.status === 410) loadCandidates();
         }
       } catch {
         setMsg('网络错误，请重试', false);
@@ -126,8 +86,6 @@
       s.onload = () => window.turnstile.render('#turnstileBox', { sitekey: TURNSTILE_SITE_KEY });
       document.head.appendChild(s);
     }
-
-    loadCandidates();
   </script>
 </body>
 </html>
