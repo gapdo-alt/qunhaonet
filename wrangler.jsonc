@@ -1,0 +1,35 @@
+{
+  // Cloudflare Pages 项目配置（Pages Functions + D1 + R2 + KV）
+  "name": "qunhao",
+  "compatibility_date": "2026-06-01",
+  "pages_build_output_dir": "public",
+
+  "vars": {
+    // 对外域名（用于预渲染页面里的 og:image 绝对地址）
+    "PUBLIC_HOST": "qunhao.net"
+  },
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "qunhao-db",
+      // 部署前替换为 `wrangler d1 create qunhao-db` 输出的 database_id
+      "database_id": "REPLACE_WITH_D1_DATABASE_ID"
+    }
+  ],
+
+  "r2_buckets": [
+    {
+      "binding": "QR_BUCKET",
+      "bucket_name": "qunhao-qr"
+    }
+  ],
+
+  "kv_namespaces": [
+    {
+      "binding": "SESSIONS",
+      // 部署前替换为 `wrangler kv namespace create SESSIONS` 输出的 id
+      "id": "REPLACE_WITH_KV_NAMESPACE_ID"
+    }
+  ]
+}

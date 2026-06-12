@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "description": "静态页面不经过 Functions（不计入 Workers 每日请求额度）",
+  "include": ["/*"],
+  "exclude": [
+    "/",
+    "/index.html",
+    "/register",
+    "/register.html",
+    "/login",
+    "/login.html",
+    "/dashboard",
+    "/dashboard.html",
+    "/assets/*",
+    "/favicon.svg"
+  ]
+}
