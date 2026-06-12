@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>用户管理 - 群号</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+  <header class="site">
+    <a class="logo" href="/">群<span>号</span></a>
+    <nav>
+      <a href="/dashboard">← 返回控制台</a>
+      <a href="#" id="logoutBtn">退出登录</a>
+    </nav>
+  </header>
+
+  <main class="page" style="max-width:720px">
+    <div class="section-head">
+      <h2>用户管理 <span id="countLabel" style="color:var(--muted);font-size:14px"></span></h2>
+    </div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:14px">
+      高级会员可自定义 3-10 位字母数字群号（大小写保留、查重不区分大小写）
+    </p>
+    <div id="userList"></div>
+    <p class="msg" id="pageMsg" style="text-align:center"></p>
+  </main>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const esc = (s) => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    const ROLE_TEXT = { user: '普通用户', premium: '高级会员', admin: '管理员' };
+
+    async function readJson(res) {
+      const text = await res.text();
+      try { return JSON.parse(text); }
+      catch { return { error: text || ('HTTP ' + res.status) }; }
+    }
+
+    function rowHtml(u, meId) {
+      const self = u.id === meId;
+      let action = '';
+      if (!self && u.role !== 'admin') {
+        action = u.role === 'premium'
+          ? `<button type="button" class="btn ghost" onclick="setRole('${u.id}', 'user')">取消高级</button>`
+          : `<button type="button" onclick="setRole('${u.id}', 'premium')">设为高级</button>`;
+      }
+      return `
+        <div class="user-row">
+          <span class="uemail">${esc(u.email)}${self ? '（我）' : ''}</span>
+          <span class="urole ${u.role}">${ROLE_TEXT[u.role] || esc(u.role)}</span>
+          <span class="ucodes">${u.code_count} 个群号</span>
+          <span class="udate">${new Date(u.created_at).toLocaleDateString('zh-CN')}</span>
+          <span class="uactions">${action}</span>
+        </div>`;
+    }
+
+    let meId = '';
+
+    async function load() {
+      const res = await fetch('/api/admin/users');
+      if (res.status === 401) { location.href = '/login'; return; }
+      const data = await readJson(res);
+      if (!res.ok) {
+        $('pageMsg').textContent = data.error || '加载失败';
+        $('pageMsg').className = 'msg error';
+        return;
+      }
+      meId = data.me;
+      $('countLabel').textContent = `（${data.users.length}）`;
+      $('userList').innerHTML = data.users.map((u) => rowHtml(u, meId)).join('');
+    }
+
+    async function setRole(id, role) {
+      const res = await fetch('/api/admin/users/' + id, {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ role }),
+      });
+      if (res.ok) {
+        load();
+      } else {
+        const data = await readJson(res);
+        $('pageMsg').textContent = data.error || '操作失败';
+        $('pageMsg').className = 'msg error';
+      }
+    }
+
+    $('logoutBtn').onclick = async (e) => {
+      e.preventDefault();
+      await fetch('/api/auth/logout', { method: 'POST' });
+      location.href = '/';
+    };
+
+    load();
+  </script>
+</body>
+</html>

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>群号详情 - 群号</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+  <header class="site">
+    <a class="logo" href="/">群<span>号</span></a>
+    <nav>
+      <a href="/dashboard">← 返回控制台</a>
+      <a href="#" id="logoutBtn">退出登录</a>
+    </nav>
+  </header>
+
+  <main class="page" style="max-width:640px">
+    <div class="card" id="detail" hidden>
+      <div class="head" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span class="dot" id="statusDot"></span>
+        <span class="gname" id="gName" style="font-size:18px;font-weight:600"></span>
+        <span class="gcode" id="gCode"></span>
+        <span class="chip" id="platformChip"></span>
+      </div>
+
+      <div class="qr-preview" id="qrPreview" style="margin:18px 0"></div>
+
+      <div class="actions" style="display:flex;gap:10px;flex-wrap:wrap">
+        <button type="button" id="uploadBtn">上传 / 替换二维码</button>
+        <a class="btn ghost" id="downloadA" hidden>下载永久二维码</a>
+        <button type="button" class="btn danger" id="deleteBtn">删除群号</button>
+      </div>
+      <p class="msg" id="actionMsg" style="margin-top:10px"></p>
+
+      <div id="shareLinks" style="margin-top:20px"></div>
+      <p class="meta-line" id="metaLine"></p>
+    </div>
+    <p class="msg error" id="pageMsg" style="text-align:center"></p>
+  </main>
+
+  <input type="file" id="qrFileInput" accept="image/*" hidden>
+
+  <script src="/assets/vendor/jsQR.js"></script>
+  <script src="/assets/vendor/qrcode.js"></script>
+  <script src="/assets/qr-tools.js"></script>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const esc = (s) => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    const codeSegment = decodeURIComponent(location.pathname.split('/').filter(Boolean).pop() || '');
+    let meta = null;
+
+    async function readJson(res) {
+      const text = await res.text();
+      try { return JSON.parse(text); }
+      catch { return { error: text || ('HTTP ' + res.status) }; }
+    }
+
+    const STATUS_TEXT = { green: '近期已更新', yellow: '建议更新', red: '可能已过期', none: '未上传二维码' };
+
+    function shareRow(label, value) {
+      return `
+        <label>${label}</label>
+        <div class="link-row">
+          <span class="url">${esc(value)}</span>
+          <button type="button" onclick="copyText(this, '${esc(value)}')">复制</button>
+        </div>`;
+    }
+
+    function copyText(btn, text) {
+      navigator.clipboard.writeText(text).then(() => {
+        const old = btn.textContent;
+        btn.textContent = '已复制';
+        setTimeout(() => (btn.textContent = old), 1200);
+      });
+    }
+
+    function render() {
+      const c = meta;
+      $('detail').hidden = false;
+      $('gName').textContent = c.name;
+      $('gCode').textContent = c.code;
+      $('statusDot').className = 'dot ' + c.statusLevel;
+      $('statusDot').title = STATUS_TEXT[c.statusLevel];
+
+      const chip = $('platformChip');
+      if (c.platform === 'wechat') { chip.textContent = '微信群'; chip.className = 'chip wechat'; }
+      else if (c.platform === 'feishu') { chip.textContent = '飞书群'; chip.className = 'chip feishu'; }
+      else { chip.textContent = '未上传'; chip.className = 'chip none'; }
+
+      $('qrPreview').innerHTML = c.updatedAt
+        ? `<img alt="群二维码" src="/i/${c.code}?v=${c.updatedAt}">`
+        : '<div class="empty">暂无群二维码，点击下方「上传 / 替换二维码」开始</div>';
+
+      // 首次上传前隐藏永久二维码下载，避免误用
+      const dl = $('downloadA');
+      if (c.updatedAt) {
+        dl.hidden = false;
+        dl.href = '/a/' + c.code;
+        dl.setAttribute('download', 'qunhao-' + c.code + '.png');
+      } else {
+        dl.hidden = true;
+      }
+
+      $('shareLinks').innerHTML =
+        shareRow('直链', c.pageUrl) +
+        shareRow('嵌入图片的链接', c.imageUrl) +
+        shareRow('分享文字', c.shareText);
+
+      $('metaLine').textContent = c.updatedAt
+        ? '最后更新：' + new Date(c.updatedAt).toLocaleString('zh-CN')
+        : '上传群二维码后，以上链接立即生效';
+    }
+
+    function setMsg(text, ok) {
+      const el = $('actionMsg');
+      el.textContent = text;
+      el.className = 'msg ' + (ok ? 'ok' : 'error');
+    }
+
+    async function load() {
+      const res = await fetch('/api/codes/' + encodeURIComponent(codeSegment));
+      if (res.status === 401) { location.href = '/login'; return; }
+      const data = await readJson(res);
+      if (!res.ok) {
+        $('pageMsg').textContent = data.error || '加载失败';
+        return;
+      }
+      meta = data;
+      // URL 大小写规范化（不刷新页面）
+      if (meta.code !== codeSegment) history.replaceState(null, '', '/dashboard/' + meta.code);
+      render();
+    }
+
+    $('uploadBtn').onclick = () => { $('qrFileInput').value = ''; $('qrFileInput').click(); };
+    $('qrFileInput').addEventListener('change', async () => {
+      const file = $('qrFileInput').files[0];
+      if (!file || !meta) return;
+
+      setMsg('正在识别二维码…', true);
+      try {
+        const content = await QrTools.decodeQrFromFile(file);
+        if (!content) { setMsg('未能识别图片中的二维码，请换一张更清晰的图', false); return; }
+
+        const platform = QrTools.detectPlatform(content);
+        if (!platform) { setMsg('仅支持微信群或飞书群二维码（识别到的内容不属于这两类）', false); return; }
+
+        setMsg('识别成功（' + (platform === 'wechat' ? '微信群' : '飞书群') + '），正在生成并上传…', true);
+        const png = await QrTools.renderQrPng(content, platform);
+
+        const form = new FormData();
+        form.append('groupUrl', content);
+        form.append('file', png, 'qr-c.png');
+        const res = await fetch('/api/codes/' + encodeURIComponent(meta.code) + '/upload', { method: 'POST', body: form });
+        const data = await readJson(res);
+        if (res.ok) {
+          await load();
+          setMsg('已更新，所有链接立即生效', true);
+        } else {
+          setMsg(data.error || '上传失败', false);
+        }
+      } catch (e) {
+        setMsg((e && e.message) || '处理失败，请重试', false);
+      }
+    });
+
+    $('deleteBtn').onclick = async () => {
+      if (!meta) return;
+      if (!confirm(`确定删除群号 ${meta.code}（${meta.name}）？\n所有分享链接将立即失效，且不可恢复。`)) return;
+      const res = await fetch('/api/codes/' + encodeURIComponent(meta.code), { method: 'DELETE' });
+      if (res.ok) {
+        location.href = '/dashboard';
+      } else {
+        const data = await readJson(res);
+        setMsg(data.error || '删除失败', false);
+      }
+    };
+
+    $('logoutBtn').onclick = async (e) => {
+      e.preventDefault();
+      await fetch('/api/auth/logout', { method: 'POST' });
+      location.href = '/';
+    };
+
+    load();
+  </script>
+</body>
+</html>

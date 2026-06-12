@@ -1,6 +1,6 @@
 import { type Env, json, errorJson } from '../../../../src/lib/env';
 import { getSessionUserId } from '../../../../src/lib/auth';
-import { isValidCode, detectPlatform } from '../../../../src/lib/codes';
+import { isCodeSegment, toCodeKey, detectPlatform } from '../../../../src/lib/codes';
 import { renderLandingPage } from '../../../../src/lib/template';
 
 /**
@@ -12,14 +12,15 @@ export const onRequestPost: PagesFunction<Env> = async (ctx) => {
   const userId = await getSessionUserId(ctx.request, ctx.env);
   if (!userId) return errorJson('请先登录', 401);
 
-  const code = ctx.params.code;
-  if (!isValidCode(code)) return errorJson('群号格式不正确', 400);
+  const segment = ctx.params.code;
+  if (!isCodeSegment(segment)) return errorJson('群号格式不正确', 400);
 
-  const row = await ctx.env.DB.prepare('SELECT user_id, name FROM codes WHERE code = ?')
-    .bind(code)
-    .first<{ user_id: string; name: string }>();
+  const row = await ctx.env.DB.prepare('SELECT code, user_id, name FROM codes WHERE code_key = ?')
+    .bind(toCodeKey(String(segment)))
+    .first<{ code: string; user_id: string; name: string }>();
   if (!row) return errorJson('群号不存在', 404);
   if (row.user_id !== userId) return errorJson('无权操作该群号', 403);
+  const code = row.code;
 
   let form: FormData;
   try {
@@ -62,7 +63,7 @@ export const onRequestPost: PagesFunction<Env> = async (ctx) => {
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     if (msg.includes('no column') || msg.includes('has no column')) {
-      return errorJson('数据库未升级到 v2，请执行 npm run db:init:remote 后重新部署', 503);
+      return errorJson('数据库未升级到 v3，请执行 npm run db:init:remote 后重新部署', 503);
     }
     console.error('upload update failed:', msg);
     return errorJson('更新失败，请稍后重试', 500);

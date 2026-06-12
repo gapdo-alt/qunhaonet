@@ -43,10 +43,14 @@ export const onRequestPost: PagesFunction<Env> = async (ctx) => {
 
   const userId = crypto.randomUUID();
   const passwordHash = await hashPassword(password);
+  // ADMIN_EMAIL 注册时自动成为管理员（首管理员引导）
+  const role = ctx.env.ADMIN_EMAIL && email === ctx.env.ADMIN_EMAIL.trim().toLowerCase() ? 'admin' : 'user';
 
   try {
-    await ctx.env.DB.prepare('INSERT INTO users (id, email, password_hash, created_at) VALUES (?, ?, ?, ?)')
-      .bind(userId, email, passwordHash, Date.now())
+    await ctx.env.DB.prepare(
+      'INSERT INTO users (id, email, password_hash, role, created_at) VALUES (?, ?, ?, ?, ?)',
+    )
+      .bind(userId, email, passwordHash, role, Date.now())
       .run();
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);

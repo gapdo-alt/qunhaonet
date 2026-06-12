@@ -414,3 +414,149 @@ footer.site {
   border: 1px solid var(--border);
   background: #fff;
 }
+
+/* ===== v3：控制台列表 / 详情 / 管理 ===== */
+
+/* 状态色点 */
+.dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--muted);
+}
+.dot.green { background: #2e9e5b; }
+.dot.yellow { background: #e6a817; }
+.dot.red { background: var(--danger); }
+.dot.none { background: var(--muted); opacity: 0.5; }
+
+.status-legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.status-legend .dot { width: 8px; height: 8px; margin-left: 6px; }
+
+/* 群号列表行 */
+.code-row {
+  display: grid;
+  grid-template-columns: 14px 1fr auto auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  margin-bottom: 10px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  text-decoration: none;
+  color: var(--text);
+  transition: border-color 0.15s;
+}
+.code-row:hover { border-color: var(--accent); }
+.code-row .rname {
+  font-weight: 600;
+  font-size: 15px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.code-row .rcode {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.code-row .rstatus { font-size: 12px; color: var(--muted); }
+.code-row .rstatus.red { color: var(--danger); }
+.code-row .rstatus.yellow { color: #e6a817; }
+.code-row .ractions { display: flex; gap: 8px; }
+.code-row .ractions button { padding: 7px 14px; font-size: 13px; }
+.code-row .rmsg { grid-column: 2 / -1; margin: 0; min-height: 0; font-size: 12px; }
+.code-row .rmsg:empty { display: none; }
+
+@media (max-width: 560px) {
+  .code-row { grid-template-columns: 14px 1fr auto; }
+  .code-row .rstatus { display: none; }
+  .code-row .ractions { grid-column: 2 / -1; }
+}
+
+button.danger, .btn.danger {
+  background: transparent;
+  color: var(--danger);
+  border: 1px solid var(--danger);
+}
+button.danger:hover, .btn.danger:hover { background: rgba(229, 72, 77, 0.1); }
+
+/* 详情页二维码预览（非卡片作用域） */
+.qr-preview { text-align: center; }
+.qr-preview img {
+  width: 100%;
+  max-width: 220px;
+  border-radius: 12px;
+  background: #fff;
+}
+.qr-preview .empty {
+  max-width: 260px;
+  margin: 0 auto;
+  padding: 32px 20px;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.gcode {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* 自定义群号输入行 */
+.custom-code-row { display: flex; gap: 10px; align-items: stretch; }
+.custom-code-row input {
+  flex: 1;
+  padding: 11px 14px;
+  font-size: 15px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  outline: none;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.custom-code-row input:focus { border-color: var(--accent); }
+.custom-code-row button { flex-shrink: 0; padding: 0 18px; font-size: 14px; }
+
+/* 管理页用户行 */
+.user-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto auto;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 18px;
+  margin-bottom: 10px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 14px;
+}
+.user-row .uemail { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.user-row .urole { font-size: 12px; padding: 3px 10px; border-radius: 999px; background: var(--border); }
+.user-row .urole.premium { background: #e6a817; color: #1a1a1a; }
+.user-row .urole.admin { background: var(--accent); color: #fff; }
+.user-row .ucodes, .user-row .udate { font-size: 12px; color: var(--muted); }
+.user-row .uactions button { padding: 6px 14px; font-size: 13px; }
+
+@media (max-width: 560px) {
+  .user-row { grid-template-columns: 1fr auto; }
+  .user-row .ucodes, .user-row .udate { display: none; }
+}

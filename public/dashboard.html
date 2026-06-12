@@ -11,6 +11,7 @@
   <header class="site">
     <a class="logo" href="/">群<span>号</span></a>
     <nav>
+      <a href="/admin" id="adminLink" hidden>用户管理</a>
       <a href="#profile">群主资料</a>
       <a href="#" id="logoutBtn">退出登录</a>
     </nav>
@@ -24,11 +25,21 @@
     </div>
 
     <div class="create-panel" id="createPanel" hidden>
-      <label>第一步：从 8 个数字中选一个（选定后不可更改）</label>
+      <div id="customBlock" hidden>
+        <label>高级会员：自定义群号（3-10 位字母或数字，大小写将被保留，重名按不区分大小写判定）</label>
+        <div class="custom-code-row">
+          <input type="text" id="customCode" maxlength="10" placeholder="例如：HDRClub" autocomplete="off">
+          <button type="button" class="btn ghost" id="checkCustomBtn">查可用</button>
+        </div>
+        <p class="msg" id="customMsg"></p>
+        <p style="font-size:13px;color:var(--muted);margin:8px 0 16px">留空则使用下方随机数字群号</p>
+      </div>
+
+      <label>从 8 个数字中选一个（选定后不可更改）</label>
       <div class="candidates" id="candidates"></div>
       <button type="button" class="refresh-link" id="refreshCandBtn">换一批</button>
 
-      <label for="groupName">第二步：群名称（显示在群页面上）</label>
+      <label for="groupName">群名称（显示在群页面上，创建后不可修改）</label>
       <input type="text" id="groupName" maxlength="30" placeholder="例如：HDR 技术交流群"
              style="width:100%;padding:12px 14px;font-size:15px;border:1px solid var(--border);border-radius:10px;background:transparent;color:var(--text);outline:none">
 
@@ -40,6 +51,12 @@
     </div>
 
     <div id="codeList"></div>
+    <p class="status-legend">
+      二维码状态：<span class="dot green"></span>3 天内更新
+      <span class="dot yellow"></span>3-5 天
+      <span class="dot red"></span>超过 5 天
+      <span class="dot none"></span>未上传
+    </p>
 
     <div class="card" id="profile" style="margin-top:32px">
       <h2 class="title" style="text-align:left;font-size:18px">群主资料</h2>
@@ -73,8 +90,8 @@
   <script src="/assets/vendor/qrcode.js"></script>
   <script src="/assets/qr-tools.js"></script>
   <script>
-    let state = { codes: [], max: 5, host: location.host };
-    let uploadTarget = null; // 当前正在上传的群号
+    let state = { codes: [], max: 5, host: location.host, canCustomize: false, role: 'user' };
+    let uploadTarget = null;
 
     const $ = (id) => document.getElementById(id);
     const esc = (s) => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -85,27 +102,21 @@
       catch { return { error: text || ('HTTP ' + res.status) }; }
     }
 
-    function chipHtml(platform) {
-      if (platform === 'wechat') return '<span class="chip wechat">微信群</span>';
-      if (platform === 'feishu') return '<span class="chip feishu">飞书群</span>';
-      return '<span class="chip none">未上传</span>';
-    }
+    const STATUS_TEXT = { green: '近期已更新', yellow: '建议更新', red: '可能已过期', none: '未上传二维码' };
 
-    function shareRow(label, value) {
+    function rowHtml(c) {
       return `
-        <label>${label}</label>
-        <div class="link-row">
-          <span class="url">${esc(value)}</span>
-          <button type="button" onclick="copyText(this, '${esc(value)}')">复制</button>
-        </div>`;
-    }
-
-    function copyText(btn, text) {
-      navigator.clipboard.writeText(text).then(() => {
-        const old = btn.textContent;
-        btn.textContent = '已复制';
-        setTimeout(() => (btn.textContent = old), 1200);
-      });
+        <a class="code-row" href="/dashboard/${c.code}">
+          <span class="dot ${c.statusLevel}" title="${STATUS_TEXT[c.statusLevel]}"></span>
+          <span class="rname">${esc(c.name)}</span>
+          <span class="rcode">${esc(c.code)}</span>
+          <span class="rstatus ${c.statusLevel}">${STATUS_TEXT[c.statusLevel]}</span>
+          <span class="ractions">
+            <button type="button" onclick="pickUpload(event, '${esc(c.code)}')">更新</button>
+            <button type="button" class="danger" onclick="delCode(event, '${esc(c.code)}', '${esc(c.name)}')">删除</button>
+          </span>
+          <span class="rmsg msg" id="msg-${esc(c.code)}"></span>
+        </a>`;
     }
 
     function renderCodes() {
@@ -117,33 +128,12 @@
         list.innerHTML = '<div class="card" style="text-align:center;color:var(--muted)">还没有群号，点击右上角「新建群号」开始</div>';
         return;
       }
-      list.innerHTML = state.codes.map((c) => `
-        <div class="code-card" data-code="${c.code}">
-          <div class="head">
-            <span class="gname">${esc(c.name)}</span>
-            ${chipHtml(c.platform)}
-            <span class="gcode">${c.code}</span>
-          </div>
-          <div class="qr-preview">
-            ${c.updatedAt
-              ? `<img alt="二维码" src="/i/${c.code}?v=${c.updatedAt}">`
-              : '<div class="empty">暂无群二维码</div>'}
-          </div>
-          <div class="actions">
-            <button type="button" onclick="pickUpload('${c.code}')">上传 / 替换二维码</button>
-            <a class="btn ghost" href="/a/${c.code}" download="qunhao-${c.code}.png">下载永久二维码</a>
-          </div>
-          ${shareRow('直链', c.pageUrl)}
-          ${shareRow('嵌入图片的链接', c.imageUrl)}
-          ${shareRow('分享文字', c.shareText)}
-          <p class="meta-line">${c.updatedAt ? '最后更新：' + new Date(c.updatedAt).toLocaleString('zh-CN') : '上传群二维码后，链接立即生效'}</p>
-          <p class="msg" id="msg-${c.code}" style="text-align:center"></p>
-        </div>`).join('');
+      list.innerHTML = state.codes.map(rowHtml).join('');
     }
 
-    function setCardMsg(code, text, ok) {
+    function setRowMsg(code, text, ok) {
       const el = $('msg-' + code);
-      if (el) { el.textContent = text; el.className = 'msg ' + (ok ? 'ok' : 'error'); }
+      if (el) { el.textContent = text; el.className = 'rmsg msg ' + (ok ? 'ok' : 'error'); }
     }
 
     async function loadCodes() {
@@ -153,11 +143,15 @@
       state.codes = data.codes;
       state.max = data.max;
       state.host = data.host;
+      state.canCustomize = !!data.canCustomize;
+      state.role = data.role || 'user';
+      $('adminLink').hidden = state.role !== 'admin';
       renderCodes();
     }
 
-    /* ===== 单步上传：点按钮 → 选图 → 自动解析并上传 ===== */
-    function pickUpload(code) {
+    /* ===== 列表内单步更新：点「更新」→ 选图 → 自动解析并上传 ===== */
+    function pickUpload(ev, code) {
+      ev.preventDefault(); ev.stopPropagation();
       uploadTarget = code;
       $('qrFileInput').value = '';
       $('qrFileInput').click();
@@ -168,32 +162,45 @@
       const code = uploadTarget;
       if (!file || !code) return;
 
-      setCardMsg(code, '正在识别二维码…', true);
+      setRowMsg(code, '正在识别二维码…', true);
       try {
         const content = await QrTools.decodeQrFromFile(file);
-        if (!content) { setCardMsg(code, '未能识别图片中的二维码，请换一张更清晰的图', false); return; }
+        if (!content) { setRowMsg(code, '未能识别图片中的二维码，请换一张更清晰的图', false); return; }
 
         const platform = QrTools.detectPlatform(content);
-        if (!platform) { setCardMsg(code, '仅支持微信群或飞书群二维码（识别到的内容不属于这两类）', false); return; }
+        if (!platform) { setRowMsg(code, '仅支持微信群或飞书群二维码', false); return; }
 
-        setCardMsg(code, '识别成功（' + (platform === 'wechat' ? '微信群' : '飞书群') + '），正在生成并上传…', true);
+        setRowMsg(code, '识别成功，正在上传…', true);
         const png = await QrTools.renderQrPng(content, platform);
 
         const form = new FormData();
         form.append('groupUrl', content);
         form.append('file', png, 'qr-c.png');
-        const res = await fetch('/api/codes/' + code + '/upload', { method: 'POST', body: form });
+        const res = await fetch('/api/codes/' + encodeURIComponent(code) + '/upload', { method: 'POST', body: form });
         const data = await readJson(res);
         if (res.ok) {
           await loadCodes();
-          setCardMsg(code, '已更新，所有链接立即生效', true);
+          setRowMsg(code, '已更新', true);
         } else {
-          setCardMsg(code, data.error || '上传失败', false);
+          setRowMsg(code, data.error || '上传失败', false);
         }
       } catch (e) {
-        setCardMsg(code, (e && e.message) || '处理失败，请重试', false);
+        setRowMsg(code, (e && e.message) || '处理失败，请重试', false);
       }
     });
+
+    /* ===== 删除 ===== */
+    async function delCode(ev, code, name) {
+      ev.preventDefault(); ev.stopPropagation();
+      if (!confirm(`确定删除群号 ${code}（${name}）？\n所有分享链接将立即失效，且不可恢复。`)) return;
+      const res = await fetch('/api/codes/' + encodeURIComponent(code), { method: 'DELETE' });
+      if (res.ok) {
+        await loadCodes();
+      } else {
+        const data = await readJson(res);
+        setRowMsg(code, data.error || '删除失败', false);
+      }
+    }
 
     /* ===== 新建群号 ===== */
     let candidateToken = '';
@@ -218,6 +225,8 @@
           box.querySelectorAll('.code-opt').forEach((b) => b.classList.remove('selected'));
           btn.classList.add('selected');
           selectedCode = code;
+          $('customCode').value = '';
+          $('customMsg').textContent = '';
         };
         box.appendChild(btn);
       }
@@ -226,6 +235,7 @@
     $('newCodeBtn').onclick = () => {
       $('createPanel').hidden = false;
       $('newCodeBtn').disabled = true;
+      $('customBlock').hidden = !state.canCustomize;
       loadCandidates();
     };
     $('cancelCreateBtn').onclick = () => {
@@ -234,34 +244,63 @@
     };
     $('refreshCandBtn').onclick = loadCandidates;
 
+    /* 自定义码可用性检查（高级会员） */
+    $('checkCustomBtn').onclick = async () => {
+      const code = $('customCode').value.trim();
+      const msg = $('customMsg');
+      if (!/^[a-zA-Z0-9]{3,10}$/.test(code)) {
+        msg.textContent = '需 3-10 位字母或数字';
+        msg.className = 'msg error';
+        return;
+      }
+      const res = await fetch('/api/codes/check?code=' + encodeURIComponent(code));
+      const data = await readJson(res);
+      if (res.ok && data.available) {
+        msg.textContent = code + ' 可用';
+        msg.className = 'msg ok';
+      } else {
+        msg.textContent = data.reason || data.error || '不可用';
+        msg.className = 'msg error';
+      }
+    };
+    $('customCode').addEventListener('input', () => {
+      if ($('customCode').value.trim()) selectedCode = '';
+      document.querySelectorAll('#candidates .code-opt').forEach((b) => b.classList.remove('selected'));
+      $('customMsg').textContent = '';
+    });
+
     $('createBtn').onclick = async () => {
       const msg = $('createMsg');
       const name = $('groupName').value.trim();
+      const customCode = state.canCustomize ? $('customCode').value.trim() : '';
       msg.textContent = '';
-      if (!selectedCode) { msg.textContent = '请先选择一个群号'; msg.className = 'msg error'; return; }
+      if (!customCode && !selectedCode) { msg.textContent = '请先选择一个群号或填写自定义群号'; msg.className = 'msg error'; return; }
       if (!name) { msg.textContent = '请填写群名称'; msg.className = 'msg error'; return; }
 
+      const finalCode = customCode || selectedCode;
       $('createBtn').disabled = true;
       try {
         // 浏览器渲染永久二维码 A（内容为展示页链接，与群号互锁）
-        const pngA = await QrTools.renderQrPng('https://' + state.host + '/' + selectedCode, 'qunhao');
+        const pngA = await QrTools.renderQrPng('https://' + state.host + '/' + finalCode, 'qunhao');
         const form = new FormData();
-        form.append('code', selectedCode);
-        form.append('token', candidateToken);
+        if (customCode) {
+          form.append('customCode', customCode);
+        } else {
+          form.append('code', selectedCode);
+          form.append('token', candidateToken);
+        }
         form.append('name', name);
         form.append('file', pngA, 'qr-a.png');
 
         const res = await fetch('/api/codes', { method: 'POST', body: form });
         const data = await readJson(res);
         if (res.ok) {
-          $('createPanel').hidden = true;
-          $('newCodeBtn').disabled = false;
-          $('groupName').value = '';
-          await loadCodes();
+          // 创建成功 → 进入详情页继续上传群二维码
+          location.href = '/dashboard/' + encodeURIComponent(data.code);
         } else {
           msg.textContent = data.error || '创建失败';
           msg.className = 'msg error';
-          if (res.status === 409 || res.status === 410) loadCandidates();
+          if (!customCode && (res.status === 409 || res.status === 410)) loadCandidates();
         }
       } catch (e) {
         msg.textContent = (e && e.message) || '网络错误，请重试';

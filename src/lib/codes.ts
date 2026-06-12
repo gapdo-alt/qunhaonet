@@ -5,11 +5,61 @@ export function randomCode(): string {
   return String(n);
 }
 
-export function isValidCode(code: unknown): code is string {
+/** 普通 5 位数字群号 */
+export function isNumericCode(code: unknown): boolean {
   return typeof code === 'string' && /^[1-9]\d{4}$/.test(code);
 }
 
+/** 系统保留路径（大小写不敏感），不可注册为群号 */
+const RESERVED = new Set([
+  'api', 'admin', 'dashboard', 'login', 'register', 'intro', 'owner',
+  'i', 'a', 'assets', 'favicon', 'index', 'qunhao', 'www', '404',
+]);
+
+export function isReserved(segment: string): boolean {
+  return RESERVED.has(segment.toLowerCase());
+}
+
+/** 高级会员自定义码：3-10 位字母数字，非保留字 */
+export function isValidCustomCode(code: unknown): code is string {
+  return (
+    typeof code === 'string' &&
+    /^[a-zA-Z0-9]{3,10}$/.test(code) &&
+    !isReserved(code)
+  );
+}
+
+/** URL 路径段是否可能是群号（接受任意大小写，用于公开路由） */
+export function isCodeSegment(segment: unknown): segment is string {
+  if (typeof segment !== 'string') return false;
+  if (isNumericCode(segment)) return true;
+  return /^[a-zA-Z0-9]{3,10}$/.test(segment) && !isReserved(segment);
+}
+
+/** 查重键：自定义码大小写不敏感；纯数字原样 */
+export function toCodeKey(code: string): string {
+  return isNumericCode(code) ? code : code.toLowerCase();
+}
+
+/** 按 code_key 解析规范群号（创建时保存的大小写形态）；不存在返回 null */
+export async function resolveCanonicalCode(db: D1Database, segment: string): Promise<string | null> {
+  const row = await db
+    .prepare('SELECT code FROM codes WHERE code_key = ?')
+    .bind(toCodeKey(segment))
+    .first<{ code: string }>();
+  return row?.code ?? null;
+}
+
 export const MAX_CODES_PER_USER = 5;
+
+/** 二维码状态色：none(未上传) / green(≤3天) / yellow(3-5天) / red(>5天) */
+export function statusLevel(updatedAt: number | null): 'none' | 'green' | 'yellow' | 'red' {
+  if (!updatedAt) return 'none';
+  const days = (Date.now() - updatedAt) / 86_400_000;
+  if (days <= 3) return 'green';
+  if (days <= 5) return 'yellow';
+  return 'red';
+}
 
 /** 生成 count 个未被占用的候选码 */
 export async function generateCandidates(db: D1Database, count = 8): Promise<string[]> {
@@ -21,10 +71,10 @@ export async function generateCandidates(db: D1Database, count = 8): Promise<str
     const codes = [...batch];
     const placeholders = codes.map(() => '?').join(',');
     const { results } = await db
-      .prepare(`SELECT code FROM codes WHERE code IN (${placeholders})`)
+      .prepare(`SELECT code_key FROM codes WHERE code_key IN (${placeholders})`)
       .bind(...codes)
-      .all<{ code: string }>();
-    const taken = new Set(results.map((r) => r.code));
+      .all<{ code_key: string }>();
+    const taken = new Set(results.map((r) => r.code_key));
     for (const c of codes) if (!taken.has(c)) picks.add(c);
   }
   return [...picks].slice(0, count);
@@ -46,3 +96,29 @@ export const PLATFORM_LABELS: Record<string, string> = {
   wechat: '微信群',
   feishu: '飞书群',
 };
+
+export interface CodeRow {
+  code: string;
+  name: string;
+  platform: 'wechat' | 'feishu' | null;
+  updated_at: number | null;
+  created_at: number;
+  is_custom?: number;
+}
+
+/** 群号 API 响应统一结构 */
+export function codeMeta(row: CodeRow, host: string) {
+  return {
+    code: row.code,
+    name: row.name,
+    platform: row.platform,
+    updatedAt: row.updated_at,
+    createdAt: row.created_at,
+    isCustom: row.is_custom === 1,
+    statusLevel: statusLevel(row.updated_at),
+    pageUrl: `https://${host}/${row.code}`,
+    imageUrl: `https://${host}/i/${row.code}`,
+    qrAUrl: `https://${host}/a/${row.code}`,
+    shareText: `群号 ${row.code} Qunhao.net`,
+  };
+}

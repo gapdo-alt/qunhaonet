@@ -1,6 +1,6 @@
-# 群号（qunhao.net）v2
+# 群号（qunhao.net）v3
 
-为群聊生成一个**永久不变**的 5 位数字链接，群二维码随时更换，分享出去的链接永远有效。
+为群聊生成一个**永久不变**的群号链接，群二维码随时更换，分享出去的链接永远有效。
 
 全部运行在 Cloudflare 免费层：**Pages（前端 + Functions）+ D1（数据库）+ R2（图片与预渲染页）+ KV（会话）**。
 
@@ -23,6 +23,9 @@
 - 每个群号三个分享框：直链、嵌入图片链接、文字 `群号 12345 Qunhao.net`
 - **单步上传**：点击「上传/替换二维码」选图后自动解析并上传
 - 群主资料：微信号 + 微信二维码；展示页自带「二维码失效？联系群主」入口
+- **控制台列表 + 详情页**（v3）：列表只显示状态色点（绿 ≤3 天 / 黄 3-5 天 / 红 >5 天 / 灰 未上传）+「更新」「删除」；二维码与全部分享链接在 `/dashboard/{code}` 详情页
+- **管理员与高级会员**（v3）：管理员在 `/admin` 把用户设为高级会员；高级会员可自定义 **3-10 位字母数字** 群号
+- **自定义码大小写规则**（v3）：创建时保留大小写（如 `AaAa`）；查重不区分大小写（`aaaa` 视为重复）；URL 任意大小写访问，非规范形态 302 跳转到原始大小写
 
 ## 路由
 
@@ -33,14 +36,17 @@
 | `/i/{code}` | 二维码 C 图片直链（URL 不变，内容随替换更新） |
 | `/a/{code}` | 二维码 A 图片（永久不变） |
 | `/owner/{code}` | 群主信息页（微信号 / 微信二维码） |
-| `/api/codes*`、`/api/profile*`、`/api/auth/*` | 控制台 API |
+| `/dashboard` | 控制台（群号列表） |
+| `/dashboard/{code}` | 群号详情（二维码、分享链接、更新/删除/下载永久码） |
+| `/admin` | 用户管理（仅管理员） |
+| `/api/codes*`、`/api/profile*`、`/api/auth/*`、`/api/admin/*` | 控制台 API |
 
 ## 目录结构
 
 ```
 qunhao/
 ├── wrangler.jsonc            # Pages 配置 + D1/R2/KV bindings
-├── schema.sql                # D1 结构（v2，破坏性重建）
+├── schema.sql                # D1 结构（v3，破坏性重建）
 ├── functions/                # Pages Functions
 │   ├── api/auth/             # register / login / logout
 │   ├── api/codes/            # 列表、创建、candidates、[code]/upload
@@ -71,7 +77,7 @@ wechat-qr/{userId}   群主微信二维码
 
 ```bash
 npm install
-npm run db:init:local     # 初始化/重置本地 D1（v2 为破坏性重建）
+npm run db:init:local     # 初始化/重置本地 D1（v3 为破坏性重建）
 npm run dev               # http://localhost:8788
 node scripts/qr-roundtrip-test.cjs   # QR 编解码回归测试
 ```
@@ -105,7 +111,11 @@ npx wrangler kv namespace create SESSIONS   # id 填入 wrangler.jsonc
 npm run db:init:remote
 ```
 
-> **v1 → v2 为破坏性变更**（群号从 8 位改 5 位、表结构重建），该命令会清空既有用户与群号数据。v1 遗留的 R2 对象（`codes/*`、`pages/*` 旧页面）可在 Dashboard 中手动清理，不影响 v2 运行。
+> **v2 → v3 为破坏性变更**（`users.role`、`codes.code_key`/`is_custom`），该命令会清空既有用户与群号数据。遗留的 R2 对象可在 Dashboard 中手动清理。
+
+### 3.5 设置首个管理员
+
+`wrangler.jsonc` → `vars.ADMIN_EMAIL` 填入你的邮箱后部署；该邮箱**注册或登录**时自动提升为管理员，之后可在 `/admin` 给其他用户开通高级会员。
 
 ### 4. 部署
 

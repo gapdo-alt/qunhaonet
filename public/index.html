@@ -23,8 +23,8 @@
       <p class="sub">一个永远不变的 5 位数字，二维码过期随时更换，链接永远有效。</p>
 
       <form class="search-box" id="searchForm">
-        <input type="text" id="searchInput" inputmode="numeric" maxlength="5"
-               placeholder="输入 5 位群号" autocomplete="off" aria-label="群号">
+        <input type="text" id="searchInput" maxlength="10"
+               placeholder="输入群号" autocomplete="off" aria-label="群号">
         <button type="submit">前往</button>
       </form>
       <p class="msg error" id="searchMsg" style="text-align:center"></p>
@@ -60,14 +60,14 @@
     document.getElementById('searchForm').onsubmit = (e) => {
       e.preventDefault();
       const v = document.getElementById('searchInput').value.trim();
-      if (/^\d{5}$/.test(v)) {
+      if (/^[1-9]\d{4}$/.test(v) || /^[a-zA-Z0-9]{3,10}$/.test(v)) {
         location.href = '/' + v;
       } else {
-        document.getElementById('searchMsg').textContent = '请输入 5 位数字群号';
+        document.getElementById('searchMsg').textContent = '群号为 5 位数字或 3-10 位字母数字';
       }
     };
     document.getElementById('searchInput').addEventListener('input', (e) => {
-      e.target.value = e.target.value.replace(/\D/g, '').slice(0, 5);
+      e.target.value = e.target.value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 10);
       document.getElementById('searchMsg').textContent = '';
     });
   </script>

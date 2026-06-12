@@ -5,7 +5,9 @@
 	"pages_build_output_dir": "public",
 	"vars": {
 		// 对外域名（用于预渲染页面里的 og:image 绝对地址）
-		"PUBLIC_HOST": "qunhao.net"
+		"PUBLIC_HOST": "qunhao.net",
+		// 首个管理员邮箱：该邮箱注册/登录时自动提升为 admin（留空则不启用）
+		"ADMIN_EMAIL": ""
 	},
 	"d1_databases": [
 		{

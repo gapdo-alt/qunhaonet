@@ -13,6 +13,9 @@
     "/login.html",
     "/dashboard",
     "/dashboard.html",
+    "/dashboard-detail.html",
+    "/admin",
+    "/admin.html",
     "/assets/*",
     "/favicon.svg"
   ]

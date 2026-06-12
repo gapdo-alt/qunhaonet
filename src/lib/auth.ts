@@ -92,3 +92,23 @@ export async function deleteSession(request: Request, env: Env): Promise<void> {
   const token = getSessionToken(request);
   if (token) await env.SESSIONS.delete(`session:${token}`);
 }
+
+export interface SessionUser {
+  id: string;
+  email: string;
+  role: 'user' | 'premium' | 'admin';
+}
+
+/** 取当前登录用户（含角色）；未登录返回 null */
+export async function getSessionUser(request: Request, env: Env): Promise<SessionUser | null> {
+  const userId = await getSessionUserId(request, env);
+  if (!userId) return null;
+  const row = await env.DB.prepare('SELECT id, email, role FROM users WHERE id = ?')
+    .bind(userId)
+    .first<SessionUser>();
+  return row ?? null;
+}
+
+export function isPremium(user: SessionUser): boolean {
+  return user.role === 'premium' || user.role === 'admin';
+}
