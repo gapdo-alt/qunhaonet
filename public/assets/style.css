@@ -267,13 +267,15 @@ footer.site {
 /* 主页搜索框 */
 .search-box {
   display: flex;
+  align-items: stretch;
   gap: 10px;
   max-width: 420px;
   margin: 32px auto 0;
 }
 .search-box input {
   flex: 1;
-  padding: 14px 18px;
+  height: 52px;
+  padding: 0 18px;
   font-size: 20px;
   letter-spacing: 4px;
   font-variant-numeric: tabular-nums;
@@ -284,9 +286,18 @@ footer.site {
   color: var(--text);
   outline: none;
   min-width: 0;
+  line-height: 52px;
 }
 .search-box input:focus { border-color: var(--accent); }
-.search-box button { padding: 12px 28px; border-radius: 12px; flex-shrink: 0; }
+.search-box button {
+  height: 52px;
+  padding: 0 28px;
+  border-radius: 12px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
 
 /* 平台徽标 */
 .chip {

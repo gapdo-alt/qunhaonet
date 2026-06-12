@@ -79,6 +79,12 @@
     const $ = (id) => document.getElementById(id);
     const esc = (s) => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
+    async function readJson(res) {
+      const text = await res.text();
+      try { return JSON.parse(text); }
+      catch { return { error: text || ('HTTP ' + res.status) }; }
+    }
+
     function chipHtml(platform) {
       if (platform === 'wechat') return '<span class="chip wechat">微信群</span>';
       if (platform === 'feishu') return '<span class="chip feishu">飞书群</span>';
@@ -177,7 +183,7 @@
         form.append('groupUrl', content);
         form.append('file', png, 'qr-c.png');
         const res = await fetch('/api/codes/' + code + '/upload', { method: 'POST', body: form });
-        const data = await res.json();
+        const data = await readJson(res);
         if (res.ok) {
           await loadCodes();
           setCardMsg(code, '已更新，所有链接立即生效', true);
@@ -185,7 +191,7 @@
           setCardMsg(code, data.error || '上传失败', false);
         }
       } catch (e) {
-        setCardMsg(code, '处理失败，请重试', false);
+        setCardMsg(code, (e && e.message) || '处理失败，请重试', false);
       }
     });
 
@@ -246,7 +252,7 @@
         form.append('file', pngA, 'qr-a.png');
 
         const res = await fetch('/api/codes', { method: 'POST', body: form });
-        const data = await res.json();
+        const data = await readJson(res);
         if (res.ok) {
           $('createPanel').hidden = true;
           $('newCodeBtn').disabled = false;
@@ -257,8 +263,8 @@
           msg.className = 'msg error';
           if (res.status === 409 || res.status === 410) loadCandidates();
         }
-      } catch {
-        msg.textContent = '网络错误，请重试';
+      } catch (e) {
+        msg.textContent = (e && e.message) || '网络错误，请重试';
         msg.className = 'msg error';
       } finally {
         $('createBtn').disabled = false;

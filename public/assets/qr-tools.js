@@ -41,18 +41,41 @@
       ),
   };
 
-  function fileToImageData(file, maxSide) {
-    return createImageBitmap(file).then(function (bitmap) {
-      var scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
-      var w = Math.max(1, Math.round(bitmap.width * scale));
-      var h = Math.max(1, Math.round(bitmap.height * scale));
-      var canvas = document.createElement('canvas');
-      canvas.width = w;
-      canvas.height = h;
-      var ctx = canvas.getContext('2d');
-      ctx.drawImage(bitmap, 0, 0, w, h);
-      return ctx.getImageData(0, 0, w, h);
+  function bitmapToImageData(bitmap, maxSide) {
+    var scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+    var w = Math.max(1, Math.round(bitmap.width * scale));
+    var h = Math.max(1, Math.round(bitmap.height * scale));
+    var canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    var ctx = canvas.getContext('2d');
+    ctx.drawImage(bitmap, 0, 0, w, h);
+    return ctx.getImageData(0, 0, w, h);
+  }
+
+  function fileToImageDataViaImage(file, maxSide) {
+    return new Promise(function (resolve, reject) {
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function () {
+        URL.revokeObjectURL(url);
+        resolve(bitmapToImageData(img, maxSide));
+      };
+      img.onerror = function () {
+        URL.revokeObjectURL(url);
+        reject(new Error('无法读取图片，请换一张 PNG/JPEG 格式的截图'));
+      };
+      img.src = url;
     });
+  }
+
+  function fileToImageData(file, maxSide) {
+    if (typeof createImageBitmap === 'function') {
+      return createImageBitmap(file)
+        .then(function (bitmap) { return bitmapToImageData(bitmap, maxSide); })
+        .catch(function () { return fileToImageDataViaImage(file, maxSide); });
+    }
+    return fileToImageDataViaImage(file, maxSide);
   }
 
   /** 解析图片中的二维码，多尺度尝试；失败返回 null */
@@ -106,6 +129,9 @@
    * 返回 Promise<Blob>（image/png）
    */
   async function renderQrPng(text, logoKind, size) {
+    if (typeof global.qrcode !== 'function') {
+      throw new Error('二维码库未加载，请刷新页面后重试');
+    }
     size = size || 660;
     var qr = global.qrcode(0, 'H');
     qr.addData(text);
@@ -139,8 +165,11 @@
       ctx.drawImage(logo, pos, pos, lsize, lsize);
     }
 
-    return new Promise(function (resolve) {
-      canvas.toBlob(resolve, 'image/png');
+    return new Promise(function (resolve, reject) {
+      canvas.toBlob(function (blob) {
+        if (blob) resolve(blob);
+        else reject(new Error('二维码生成失败，请刷新页面后重试'));
+      }, 'image/png');
     });
   }
 

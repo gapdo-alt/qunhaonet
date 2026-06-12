@@ -95,7 +95,11 @@ export const onRequestPost: PagesFunction<Env> = async (ctx) => {
     if (msg.includes('UNIQUE') || msg.includes('PRIMARY')) {
       return errorJson('该群号刚被他人占用，请重新选择', 409);
     }
-    throw e;
+    if (msg.includes('no column') || msg.includes('has no column')) {
+      return errorJson('数据库未升级到 v2，请执行 npm run db:init:remote 后重新部署', 503);
+    }
+    console.error('create code failed:', msg);
+    return errorJson('创建失败，请稍后重试', 500);
   }
 
   ctx.waitUntil(ctx.env.SESSIONS.delete(`cand:${token}`));

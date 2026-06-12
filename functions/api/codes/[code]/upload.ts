@@ -55,9 +55,18 @@ export const onRequestPost: PagesFunction<Env> = async (ctx) => {
   );
 
   // 3. 更新元数据
-  await ctx.env.DB.prepare('UPDATE codes SET platform = ?, group_url = ?, updated_at = ? WHERE code = ?')
-    .bind(platform, groupUrl, now, code)
-    .run();
+  try {
+    await ctx.env.DB.prepare('UPDATE codes SET platform = ?, group_url = ?, updated_at = ? WHERE code = ?')
+      .bind(platform, groupUrl, now, code)
+      .run();
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg.includes('no column') || msg.includes('has no column')) {
+      return errorJson('数据库未升级到 v2，请执行 npm run db:init:remote 后重新部署', 503);
+    }
+    console.error('upload update failed:', msg);
+    return errorJson('更新失败，请稍后重试', 500);
+  }
 
   return json({ code, platform, updatedAt: now });
 };
