@@ -1,0 +1,53 @@
+:80 {
+  encode zstd gzip
+
+  handle /assets/* {
+    reverse_proxy static:80
+  }
+
+  handle /favicon.svg {
+    reverse_proxy static:80
+  }
+
+  handle /api/* {
+    reverse_proxy app:3000
+  }
+
+  handle /health {
+    reverse_proxy app:3000
+  }
+
+  handle /owner* {
+    reverse_proxy app:3000
+  }
+
+  handle /dashboard* {
+    reverse_proxy app:3000
+  }
+
+  handle /a/* {
+    reverse_proxy app:3000
+  }
+
+  handle /i/* {
+    reverse_proxy app:3000
+  }
+
+  @staticPages path / /intro /login /register /admin /forgot-password /reset-password
+  handle @staticPages {
+    reverse_proxy static:80
+  }
+
+  handle /dashboard {
+    reverse_proxy static:80
+  }
+
+  @code path_regexp code ^/[a-zA-Z0-9]{3,10}$
+  handle @code {
+    reverse_proxy app:3000
+  }
+
+  handle {
+    reverse_proxy static:80
+  }
+}

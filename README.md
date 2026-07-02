@@ -113,9 +113,16 @@ npm run db:init:remote
 
 > **v2 → v3 为破坏性变更**（`users.role`、`codes.code_key`/`is_custom`），该命令会清空既有用户与群号数据。遗留的 R2 对象可在 Dashboard 中手动清理。
 
-### 3.5 设置首个管理员
+### 3.5 设置首个管理员与 Turnstile
 
-`wrangler.jsonc` → `vars.ADMIN_EMAIL` 填入你的邮箱后部署；该邮箱**注册或登录**时自动提升为管理员，之后可在 `/admin` 给其他用户开通高级会员。
+```bash
+npx wrangler pages secret put ADMIN_EMAIL          # 首个管理员邮箱
+npx wrangler pages secret put TURNSTILE_SECRET_KEY # 注册人机验证（与 register.html 的 sitekey 配对）
+```
+
+本地开发：复制 `.dev.vars`（见仓库内示例值）到项目根目录。`ADMIN_EMAIL` 对应邮箱**注册或登录**时自动提升为管理员。
+
+生产部署前：将 `public/register.html` 的 `TURNSTILE_SITE_KEY` 换为 Dashboard 创建的 widget sitekey（勿使用测试 key）。
 
 ### 4. 部署
 
@@ -130,8 +137,10 @@ Dashboard → Workers & Pages → qunhao → Custom domains → 添加 `qunhao.n
 ### 6.（可选）启用 Turnstile
 
 1. Dashboard → Turnstile → Add widget（域名 `qunhao.net`，开发加 `localhost`）
-2. `public/register.html` 填入 `TURNSTILE_SITE_KEY`
+2. `public/register.html` 将 `TURNSTILE_SITE_KEY` 换为生产 widget 的 sitekey
 3. `npx wrangler pages secret put TURNSTILE_SECRET_KEY`，重新部署
+
+> 本地默认使用 Cloudflare 测试 key：sitekey `1x00000000000000000000AA`，secret `1x0000000000000000000000000000000AA`（二者必须配对，不可混用）。
 
 ### 7. 上线验证清单
 

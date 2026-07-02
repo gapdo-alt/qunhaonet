@@ -39,8 +39,8 @@
   </main>
 
   <script>
-    // Cloudflare 测试用 sitekey（本地开发）；生产请换为 Dashboard 创建的 widget sitekey
-    const TURNSTILE_SITE_KEY = '1x00000000000000000000AA';
+    let turnstileWidgetId = null;
+    let TURNSTILE_SITE_KEY = '';
 
     function setMsg(text, ok) {
       const el = document.getElementById('msg');
@@ -92,15 +92,22 @@
       }
     };
 
-    if (TURNSTILE_SITE_KEY) {
-      const s = document.createElement('script');
-      s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
-      s.async = true;
-      s.onload = () => {
-        turnstileWidgetId = window.turnstile.render('#turnstileBox', { sitekey: TURNSTILE_SITE_KEY });
-      };
-      document.head.appendChild(s);
-    }
+    fetch('/api/config').then(r => r.json()).then((cfg) => {
+      if (cfg.turnstileSiteKey) {
+        TURNSTILE_SITE_KEY = cfg.turnstileSiteKey;
+        const s = document.createElement('script');
+        s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+        s.async = true;
+        s.onload = () => {
+          turnstileWidgetId = window.turnstile.render('#turnstileBox', { sitekey: TURNSTILE_SITE_KEY });
+        };
+        document.head.appendChild(s);
+      } else {
+        document.getElementById('turnstileBox').hidden = true;
+      }
+    }).catch(() => {
+      document.getElementById('turnstileBox').hidden = true;
+    });
   </script>
 </body>
 </html>

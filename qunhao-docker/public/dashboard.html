@@ -82,6 +82,20 @@
       <p class="msg" id="profileMsg"></p>
     </div>
 
+    <div class="card" id="passwordCard" style="margin-top:24px">
+      <h2 class="title" style="text-align:left;font-size:18px">修改密码</h2>
+      <div class="field" style="margin-top:14px">
+        <label for="currentPassword">当前密码</label>
+        <input type="password" id="currentPassword" autocomplete="current-password">
+      </div>
+      <div class="field" style="margin-top:12px">
+        <label for="newPassword">新密码（至少 8 位）</label>
+        <input type="password" id="newPassword" autocomplete="new-password" minlength="8">
+      </div>
+      <button type="button" id="changePasswordBtn" style="margin-top:16px">更新密码</button>
+      <p class="msg" id="passwordMsg"></p>
+    </div>
+
   </main>
 
   <input type="file" id="qrFileInput" accept="image/*" hidden>
@@ -356,6 +370,28 @@
         setProfileMsg(data.error || '上传失败', false);
       }
     });
+
+    $('changePasswordBtn').onclick = async () => {
+      const msg = $('passwordMsg');
+      const res = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          currentPassword: $('currentPassword').value,
+          newPassword: $('newPassword').value,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        msg.textContent = '密码已更新';
+        msg.className = 'msg ok';
+        $('currentPassword').value = '';
+        $('newPassword').value = '';
+      } else {
+        msg.textContent = data.error || '更新失败';
+        msg.className = 'msg error';
+      }
+    };
 
     $('logoutBtn').onclick = async (e) => {
       e.preventDefault();
