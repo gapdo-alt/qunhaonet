@@ -561,3 +561,156 @@ button.danger:hover, .btn.danger:hover { background: rgba(229, 72, 77, 0.1); }
   .user-row { grid-template-columns: 1fr auto; }
   .user-row .ucodes, .user-row .udate { display: none; }
 }
+
+/* ===== 北京单城试点 ===== */
+
+.bj-hero { padding-top: 48px; }
+.bj-eyebrow {
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+.bj-h2 { font-size: 18px; margin: 8px 0 14px; }
+.bj-section { margin-top: 28px; }
+.bj-pill {
+  display: inline-block;
+  font-size: 12px;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+.bj-seo-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin: 8px 0 28px;
+}
+.bj-seo-links a {
+  font-size: 13px;
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.bj-filters, .bj-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.bj-filter {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.bj-filter.on, .bj-filter:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+.bj-group-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+}
+.bj-group {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 16px;
+}
+.bj-group h3 { font-size: 16px; margin: 8px 0; }
+.bj-group p { font-size: 13px; color: var(--muted); line-height: 1.6; min-height: 2.4em; }
+.bj-group-top { display: flex; justify-content: space-between; gap: 8px; }
+.bj-tag {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+}
+.bj-status { font-size: 12px; color: var(--muted); }
+.bj-group-meta {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.bj-group-actions { margin-top: 14px; }
+.bj-group-actions .btn { padding: 9px 16px; font-size: 13px; }
+
+select,
+textarea,
+input[type="text"],
+input[type="tel"],
+input[type="number"] {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 15px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  outline: none;
+  font-family: inherit;
+}
+select:focus,
+textarea:focus,
+input[type="text"]:focus,
+input[type="tel"]:focus,
+input[type="number"]:focus { border-color: var(--accent); }
+textarea { resize: vertical; min-height: 96px; }
+
+.bj-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+.bj-ops-form { margin-bottom: 16px; }
+.bj-ops-form .btn, .bj-ops-form button { margin-top: 16px; }
+.bj-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  font-size: 14px;
+  color: var(--text);
+}
+.bj-check input { width: auto; }
+.bj-op-row {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.bj-op-row .muted, .muted { color: var(--muted); font-size: 13px; }
+.bj-row-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.bj-row-actions button { padding: 7px 12px; font-size: 13px; }
+.bj-row-actions button.ghost {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+.bj-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+.bj-metric {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+}
+.bj-metric .k { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+.bj-metric .v { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>北京群目录与本地服务 - 群号 qunhao.net</title>
+  <meta name="description" content="北京单城试点：检索小区群、主机游戏群，提交开锁水管电路报修。群号提供永久入群链接与本地服务撮合入口。">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/style.css?v=20260811bj">
+</head>
+<body>
+  <header class="site">
+    <a class="logo" href="/">群<span>号</span></a>
+    <nav>
+      <a href="/beijing/request">报修</a>
+      <a href="/login">登录</a>
+      <a class="primary" href="/beijing/request">提交需求</a>
+    </nav>
+  </header>
+
+  <main class="page">
+    <section class="hero bj-hero">
+      <p class="bj-eyebrow">北京单城试点</p>
+      <h1>群<span>号</span> · 北京</h1>
+      <p class="sub">先找对群，再解决身边事。试点圈层：朝阳 / 通州相邻带 · 主线本地维修撮合 · 辅线主机游戏社群。</p>
+      <div class="cta">
+        <a class="btn" href="/beijing/request">开锁 / 维修报修</a>
+        <a class="btn ghost" href="#directory">浏览群目录</a>
+      </div>
+    </section>
+
+    <section class="bj-seo-links" aria-label="相关检索">
+      <a href="/beijing/xiaoqu">北京小区群</a>
+      <a href="/beijing/kaiguan">北京开锁</a>
+      <a href="/beijing/game">北京主机游戏群</a>
+    </section>
+
+    <section id="directory" class="bj-section">
+      <div class="section-head">
+        <h2>群目录</h2>
+        <span class="bj-pill" id="dirMeta">加载中…</span>
+      </div>
+      <div class="bj-filters" id="filters">
+        <button type="button" class="bj-filter on" data-cat="">全部</button>
+        <button type="button" class="bj-filter" data-cat="xiaoqu">小区</button>
+        <button type="button" class="bj-filter" data-cat="game">主机游戏</button>
+        <button type="button" class="bj-filter" data-cat="service">服务对接</button>
+      </div>
+      <div id="groupList" class="bj-group-list"></div>
+      <p class="msg error" id="dirMsg"></p>
+    </section>
+
+    <section class="bj-section">
+      <h2 class="bj-h2">试点说明</h2>
+      <div class="features">
+        <div class="feature">
+          <h3>只做北京</h3>
+          <p>不招商省代、不做多城并行。验证本地社群能否稳定产生可抽佣服务交易。</p>
+        </div>
+        <div class="feature">
+          <h3>主线：维修撮合</h3>
+          <p>开锁、水管、电路小修。圈层内师傅建档接单，抽佣与售后可追踪。</p>
+        </div>
+        <div class="feature">
+          <h3>辅线：主机游戏</h3>
+          <p>养活跃与口碑。不做卡带租赁主业，不做美妆培训广告主业。</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site">qunhao.net · 北京试点 · <a href="/beijing/ops" style="color:inherit">运营台</a></footer>
+
+  <script>
+    const listEl = document.getElementById('groupList');
+    const metaEl = document.getElementById('dirMeta');
+    const msgEl = document.getElementById('dirMsg');
+    let currentCat = '';
+
+    const catLabel = { xiaoqu: '小区', game: '主机游戏', service: '服务' };
+    const statusLabel = { active: '可加入', pending: '筹备中', expired: '待更新' };
+
+    async function load(cat) {
+      msgEl.textContent = '';
+      listEl.innerHTML = '<p style="color:var(--muted);font-size:14px">加载目录…</p>';
+      try {
+        const q = cat ? ('?category=' + encodeURIComponent(cat)) : '';
+        const res = await fetch('/api/beijing/directory' + q);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || '加载失败');
+        metaEl.textContent = data.pilotDistrict || '北京';
+        const groups = data.groups || [];
+        if (!groups.length) {
+          listEl.innerHTML = '<p style="color:var(--muted);font-size:14px">暂无目录项。运营可在运营台维护。</p>';
+          return;
+        }
+        listEl.innerHTML = groups.map(g => {
+          const href = g.code ? ('/' + encodeURIComponent(g.code)) : '';
+          const action = href
+            ? '<a class="btn" href="' + href + '">进入群号</a>'
+            : '<a class="btn ghost" href="/beijing/request">去报修</a>';
+          return '<article class="bj-group">' +
+            '<div class="bj-group-top">' +
+              '<span class="bj-tag">' + (catLabel[g.category] || g.category) + '</span>' +
+              '<span class="bj-status">' + (statusLabel[g.status] || g.status) + '</span>' +
+            '</div>' +
+            '<h3>' + escapeHtml(g.name) + '</h3>' +
+            '<p>' + escapeHtml(g.description || g.join_hint || '') + '</p>' +
+            '<div class="bj-group-meta">' +
+              (g.district ? '<span>' + escapeHtml(g.district) + '</span>' : '') +
+              (g.updated_at ? '<span>更新 ' + new Date(g.updated_at).toLocaleDateString('zh-CN') + '</span>' : '') +
+            '</div>' +
+            '<div class="bj-group-actions">' + action + '</div>' +
+          '</article>';
+        }).join('');
+      } catch (e) {
+        listEl.innerHTML = '';
+        msgEl.textContent = e.message || '目录暂不可用（请确认已执行 schema-beijing-pilot.sql）';
+      }
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    document.getElementById('filters').onclick = (e) => {
+      const btn = e.target.closest('.bj-filter');
+      if (!btn) return;
+      currentCat = btn.dataset.cat || '';
+      document.querySelectorAll('.bj-filter').forEach(b => b.classList.toggle('on', b === btn));
+      load(currentCat);
+    };
+
+    load('');
+  </script>
+</body>
+</html>
