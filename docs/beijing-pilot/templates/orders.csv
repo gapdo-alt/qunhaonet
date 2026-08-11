@@ -1,0 +1,4 @@
+id,request_id,craftsman_name,category,district,source,amount_yuan,commission_yuan,aftersale_yuan,status,fail_reason,complaint,notes,completed_at
+例-001,,张师傅,开锁,朝阳,group,180,36,0,completed,,0,示例勿当真,2026-08-01
+例-002,,李师傅,水管,通州,web,120,24,20,completed,,1,售后换胶圈,2026-08-02
+例-003,,王师傅,电路,朝阳,seo,0,0,0,failed,用户改约美团,,圈层外犹豫,

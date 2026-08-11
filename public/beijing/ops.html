@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>北京试点运营台 - 群号</title>
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/style.css?v=20260811bj">
+</head>
+<body>
+  <header class="site">
+    <a class="logo" href="/">群<span>号</span></a>
+    <nav>
+      <a href="/beijing">北京站</a>
+      <a href="/beijing/metrics">单位经济</a>
+      <a class="primary" href="/admin">管理</a>
+    </nav>
+  </header>
+
+  <main class="page">
+    <h2 class="bj-h2">北京试点运营台</h2>
+    <p id="authMsg" class="msg" style="margin-bottom:16px">需管理员登录后使用。</p>
+
+    <div class="bj-tabs">
+      <button type="button" class="bj-filter on" data-tab="requests">需求</button>
+      <button type="button" class="bj-filter" data-tab="craftsmen">师傅</button>
+      <button type="button" class="bj-filter" data-tab="orders">订单</button>
+      <button type="button" class="bj-filter" data-tab="directory">目录</button>
+    </div>
+
+    <section id="tab-requests" class="bj-ops-panel">
+      <div class="section-head"><h2>服务需求</h2><button type="button" id="refreshReq" class="btn ghost">刷新</button></div>
+      <div id="reqList"></div>
+    </section>
+
+    <section id="tab-craftsmen" class="bj-ops-panel" hidden>
+      <div class="section-head"><h2>师傅建档</h2></div>
+      <form id="craftForm" class="card bj-ops-form">
+        <div class="bj-form-grid">
+          <div><label>姓名</label><input type="text" id="cName" required></div>
+          <div><label>电话</label><input type="tel" id="cPhone" required></div>
+          <div><label>品类（逗号分隔）</label><input type="text" id="cCats" placeholder="开锁,水管" required></div>
+          <div><label>城区（逗号分隔）</label><input type="text" id="cDistricts" placeholder="朝阳,通州" required></div>
+        </div>
+        <label class="bj-check"><input type="checkbox" id="cVerified"> 已实名核验</label>
+        <label>备注</label>
+        <input type="text" id="cNotes">
+        <button type="submit">新增师傅</button>
+        <p class="msg" id="cMsg"></p>
+      </form>
+      <div id="craftList"></div>
+    </section>
+
+    <section id="tab-orders" class="bj-ops-panel" hidden>
+      <div class="section-head"><h2>订单记账</h2></div>
+      <form id="orderForm" class="card bj-ops-form">
+        <div class="bj-form-grid">
+          <div>
+            <label>关联需求 ID（可选）</label>
+            <input type="text" id="oReq">
+          </div>
+          <div>
+            <label>师傅</label>
+            <select id="oCraft"><option value="">—</option></select>
+          </div>
+          <div>
+            <label>品类</label>
+            <select id="oCat">
+              <option>开锁</option><option>水管</option><option>电路</option><option>其他</option>
+            </select>
+          </div>
+          <div>
+            <label>城区</label>
+            <input type="text" id="oDistrict" required>
+          </div>
+          <div>
+            <label>来源</label>
+            <select id="oSource">
+              <option value="group">group</option>
+              <option value="web">web</option>
+              <option value="seo">seo</option>
+              <option value="referral">referral</option>
+            </select>
+          </div>
+          <div>
+            <label>状态</label>
+            <select id="oStatus">
+              <option value="completed">completed</option>
+              <option value="failed">failed</option>
+              <option value="open">open</option>
+              <option value="disputed">disputed</option>
+            </select>
+          </div>
+          <div><label>客单（元）</label><input type="number" id="oAmount" min="0" step="0.01" value="0"></div>
+          <div><label>抽佣（元）</label><input type="number" id="oComm" min="0" step="0.01" value="0"></div>
+          <div><label>售后（元）</label><input type="number" id="oAfter" min="0" step="0.01" value="0"></div>
+        </div>
+        <label>失败原因</label>
+        <input type="text" id="oFail">
+        <label class="bj-check"><input type="checkbox" id="oComplaint"> 有投诉</label>
+        <label>备注</label>
+        <input type="text" id="oNotes">
+        <button type="submit">录入订单</button>
+        <p class="msg" id="oMsg"></p>
+      </form>
+      <div id="orderList"></div>
+    </section>
+
+    <section id="tab-directory" class="bj-ops-panel" hidden>
+      <div class="section-head"><h2>目录维护</h2></div>
+      <form id="dirForm" class="card bj-ops-form">
+        <div class="bj-form-grid">
+          <div><label>ID（更新时填写）</label><input type="text" id="dId" placeholder="留空则新建"></div>
+          <div><label>名称</label><input type="text" id="dName" required></div>
+          <div>
+            <label>分类</label>
+            <select id="dCat">
+              <option value="xiaoqu">xiaoqu</option>
+              <option value="game">game</option>
+              <option value="service">service</option>
+            </select>
+          </div>
+          <div><label>城区</label><input type="text" id="dDistrict"></div>
+          <div><label>群号 code</label><input type="text" id="dCode"></div>
+          <div>
+            <label>状态</label>
+            <select id="dStatus">
+              <option value="pending">pending</option>
+              <option value="active">active</option>
+              <option value="expired">expired</option>
+            </select>
+          </div>
+        </div>
+        <label>简介</label>
+        <input type="text" id="dDesc">
+        <label>入群提示</label>
+        <input type="text" id="dHint">
+        <button type="submit">保存目录项</button>
+        <p class="msg" id="dMsg"></p>
+      </form>
+      <div id="dirList"></div>
+    </section>
+  </main>
+
+  <footer class="site">仅管理员 · 目标累计 ≥20 笔真实订单记账</footer>
+
+  <script>
+    const authMsg = document.getElementById('authMsg');
+    let craftsmenCache = [];
+
+    async function api(path, opts) {
+      const res = await fetch(path, {
+        credentials: 'same-origin',
+        headers: { 'content-type': 'application/json', ...(opts && opts.headers) },
+        ...opts,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 401) {
+        authMsg.className = 'msg error';
+        authMsg.innerHTML = '请先 <a href="/login">登录</a> 管理员账号';
+        throw new Error('未登录');
+      }
+      if (res.status === 403) {
+        authMsg.className = 'msg error';
+        authMsg.textContent = '需要管理员权限';
+        throw new Error('无权限');
+      }
+      if (!res.ok) throw new Error(data.error || '请求失败');
+      return data;
+    }
+
+    function showTab(name) {
+      document.querySelectorAll('.bj-tabs .bj-filter').forEach(b => b.classList.toggle('on', b.dataset.tab === name));
+      ['requests','craftsmen','orders','directory'].forEach(t => {
+        document.getElementById('tab-' + t).hidden = t !== name;
+      });
+    }
+
+    document.querySelector('.bj-tabs').onclick = (e) => {
+      const b = e.target.closest('[data-tab]');
+      if (b) showTab(b.dataset.tab);
+    };
+
+    function esc(s) {
+      return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    async function loadRequests() {
+      const data = await api('/api/beijing/requests');
+      authMsg.className = 'msg ok';
+      authMsg.textContent = '已登录管理员 · 需求 ' + data.requests.length + ' 条';
+      const el = document.getElementById('reqList');
+      el.innerHTML = data.requests.map(r =>
+        '<div class="bj-op-row">' +
+          '<div><strong>' + esc(r.category) + '</strong> · ' + esc(r.district) +
+          ' <span class="bj-pill">' + esc(r.status) + '</span></div>' +
+          '<div class="muted">' + esc(r.contact_name) + ' ' + esc(r.contact_phone) + ' · ' + esc(r.source) + '</div>' +
+          '<div>' + esc(r.description) + '</div>' +
+          '<div class="bj-row-actions">' +
+            '<button type="button" data-assign="' + esc(r.id) + '">标为已派单</button>' +
+            '<button type="button" class="ghost" data-fill="' + esc(r.id) + '" data-cat="' + esc(r.category) + '" data-dist="' + esc(r.district) + '" data-src="' + esc(r.source) + '">填订单</button>' +
+          '</div>' +
+        '</div>'
+      ).join('') || '<p class="muted">暂无需求</p>';
+    }
+
+    document.getElementById('reqList').onclick = async (e) => {
+      const a = e.target.closest('[data-assign]');
+      if (a) {
+        await api('/api/beijing/requests/' + a.dataset.assign, { method: 'PATCH', body: JSON.stringify({ status: 'assigned' }) });
+        await loadRequests();
+        return;
+      }
+      const f = e.target.closest('[data-fill]');
+      if (f) {
+        showTab('orders');
+        document.getElementById('oReq').value = f.dataset.fill;
+        document.getElementById('oCat').value = f.dataset.cat;
+        document.getElementById('oDistrict').value = f.dataset.dist;
+        document.getElementById('oSource').value = f.dataset.src;
+      }
+    };
+
+    async function loadCraftsmen() {
+      const data = await api('/api/beijing/craftsmen');
+      craftsmenCache = data.craftsmen || [];
+      const sel = document.getElementById('oCraft');
+      sel.innerHTML = '<option value="">—</option>' + craftsmenCache.map(c =>
+        '<option value="' + esc(c.id) + '">' + esc(c.name) + ' (' + esc(c.phone) + ')</option>'
+      ).join('');
+      document.getElementById('craftList').innerHTML = craftsmenCache.map(c =>
+        '<div class="bj-op-row"><strong>' + esc(c.name) + '</strong> ' + esc(c.phone) +
+        ' · ' + esc(c.categories) + ' · ' + esc(c.districts) +
+        ' <span class="bj-pill">' + esc(c.status) + (c.id_verified ? ' · 实名' : '') + '</span></div>'
+      ).join('') || '<p class="muted">尚未建档，目标 ≥10 人</p>';
+    }
+
+    document.getElementById('craftForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const msg = document.getElementById('cMsg');
+      try {
+        await api('/api/beijing/craftsmen', {
+          method: 'POST',
+          body: JSON.stringify({
+            name: document.getElementById('cName').value,
+            phone: document.getElementById('cPhone').value,
+            categories: document.getElementById('cCats').value,
+            districts: document.getElementById('cDistricts').value,
+            idVerified: document.getElementById('cVerified').checked,
+            notes: document.getElementById('cNotes').value,
+          }),
+        });
+        msg.className = 'msg ok';
+        msg.textContent = '已新增';
+        e.target.reset();
+        await loadCraftsmen();
+      } catch (err) {
+        msg.className = 'msg error';
+        msg.textContent = err.message;
+      }
+    };
+
+    async function loadOrders() {
+      const data = await api('/api/beijing/orders');
+      document.getElementById('orderList').innerHTML = (data.orders || []).map(o =>
+        '<div class="bj-op-row"><strong>' + esc(o.category) + '</strong> ' + esc(o.district) +
+        ' · ¥' + ((o.amount_cents||0)/100).toFixed(2) +
+        ' 佣 ¥' + ((o.commission_cents||0)/100).toFixed(2) +
+        ' <span class="bj-pill">' + esc(o.status) + '</span>' +
+        '<div class="muted">' + esc(o.craftsman_name || '') + ' · ' + esc(o.source) +
+        (o.complaint ? ' · 投诉' : '') + '</div></div>'
+      ).join('') || '<p class="muted">暂无订单，目标 ≥20 笔</p>';
+    }
+
+    document.getElementById('orderForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const msg = document.getElementById('oMsg');
+      try {
+        await api('/api/beijing/orders', {
+          method: 'POST',
+          body: JSON.stringify({
+            requestId: document.getElementById('oReq').value.trim() || undefined,
+            craftsmanId: document.getElementById('oCraft').value || undefined,
+            category: document.getElementById('oCat').value,
+            district: document.getElementById('oDistrict').value,
+            source: document.getElementById('oSource').value,
+            status: document.getElementById('oStatus').value,
+            amountYuan: document.getElementById('oAmount').value,
+            commissionYuan: document.getElementById('oComm').value,
+            aftersaleYuan: document.getElementById('oAfter').value,
+            failReason: document.getElementById('oFail').value,
+            complaint: document.getElementById('oComplaint').checked,
+            notes: document.getElementById('oNotes').value,
+          }),
+        });
+        msg.className = 'msg ok';
+        msg.textContent = '订单已记账';
+        await loadOrders();
+        await loadRequests();
+      } catch (err) {
+        msg.className = 'msg error';
+        msg.textContent = err.message;
+      }
+    };
+
+    async function loadDir() {
+      const data = await api('/api/beijing/directory');
+      document.getElementById('dirList').innerHTML = (data.groups || []).map(g =>
+        '<div class="bj-op-row"><strong>' + esc(g.name) + '</strong> <span class="bj-pill">' + esc(g.category) + '/' + esc(g.status) + '</span>' +
+        '<div class="muted">id=' + esc(g.id) + (g.code ? ' · code=' + esc(g.code) : '') + '</div></div>'
+      ).join('');
+    }
+
+    document.getElementById('dirForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const msg = document.getElementById('dMsg');
+      try {
+        await api('/api/beijing/directory', {
+          method: 'POST',
+          body: JSON.stringify({
+            id: document.getElementById('dId').value.trim() || undefined,
+            name: document.getElementById('dName').value,
+            category: document.getElementById('dCat').value,
+            district: document.getElementById('dDistrict').value,
+            code: document.getElementById('dCode').value,
+            status: document.getElementById('dStatus').value,
+            description: document.getElementById('dDesc').value,
+            joinHint: document.getElementById('dHint').value,
+          }),
+        });
+        msg.className = 'msg ok';
+        msg.textContent = '已保存';
+        await loadDir();
+      } catch (err) {
+        msg.className = 'msg error';
+        msg.textContent = err.message;
+      }
+    };
+
+    document.getElementById('refreshReq').onclick = () => loadRequests().catch(() => {});
+
+    (async () => {
+      try {
+        await loadRequests();
+        await loadCraftsmen();
+        await loadOrders();
+        await loadDir();
+      } catch (_) {}
+    })();
+  </script>
+</body>
+</html>

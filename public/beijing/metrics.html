@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>北京试点单位经济 - 群号</title>
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/style.css?v=20260811bj">
+</head>
+<body>
+  <header class="site">
+    <a class="logo" href="/">群<span>号</span></a>
+    <nav>
+      <a href="/beijing/ops">运营台</a>
+      <a class="primary" href="/beijing">北京站</a>
+    </nav>
+  </header>
+
+  <main class="page">
+    <h2 class="bj-h2">单位经济看板</h2>
+    <p class="muted" style="margin-bottom:16px">对照继续 / 停损标准。CAC 需人工填入运营时薪后估算。</p>
+
+    <div class="bj-form-grid" style="margin-bottom:20px">
+      <div>
+        <label>统计窗口（天）</label>
+        <select id="days">
+          <option value="30">30</option>
+          <option value="90" selected>90</option>
+          <option value="180">180</option>
+        </select>
+      </div>
+      <div>
+        <label>本期获客成本合计（元，含时薪折算）</label>
+        <input type="number" id="cacTotal" min="0" step="1" value="0">
+      </div>
+      <div>
+        <label>新成交用户数（估）</label>
+        <input type="number" id="newUsers" min="0" step="1" value="0">
+      </div>
+    </div>
+    <button type="button" id="reload">重新计算</button>
+    <p class="msg" id="msg"></p>
+
+    <div id="cards" class="bj-metric-grid"></div>
+
+    <section class="card" style="margin-top:20px">
+      <h3 style="margin-bottom:10px">决策</h3>
+      <p id="decision" style="line-height:1.7;font-size:14px;color:var(--muted)"></p>
+      <ul id="stops" style="margin-top:12px;padding-left:18px;font-size:14px;color:var(--danger)"></ul>
+      <p style="margin-top:16px;font-size:13px;color:var(--muted)">
+        文档：<a href="/beijing">试点入口</a> · 标准见仓库 docs/beijing-pilot/UNIT_ECONOMICS.md
+      </p>
+    </section>
+  </main>
+
+  <footer class="site">qunhao.net · 北京试点</footer>
+
+  <script>
+    function pct(n) { return n == null ? '—' : (n * 100).toFixed(1) + '%'; }
+    function yuan(n) { return n == null ? '—' : '¥' + Number(n).toFixed(2); }
+
+    async function load() {
+      const msg = document.getElementById('msg');
+      msg.textContent = '';
+      const days = document.getElementById('days').value;
+      const res = await fetch('/api/beijing/metrics?days=' + days, { credentials: 'same-origin' });
+      const data = await res.json();
+      if (res.status === 401) {
+        msg.className = 'msg error';
+        msg.innerHTML = '请先 <a href="/login">登录</a> 管理员';
+        return;
+      }
+      if (!res.ok) {
+        msg.className = 'msg error';
+        msg.textContent = data.error || '加载失败';
+        return;
+      }
+
+      const cacTotal = Number(document.getElementById('cacTotal').value || 0);
+      const newUsers = Number(document.getElementById('newUsers').value || 0);
+      const cac = newUsers > 0 ? cacTotal / newUsers : null;
+
+      const items = [
+        ['有效需求', data.validRequests],
+        ['需求已成交', data.doneRequests ?? '—'],
+        ['完成订单', data.completedOrders],
+        ['失败订单', data.failedOrders],
+        ['需求→成交率', pct(data.conversionRate)],
+        ['客单均价', yuan(data.avgOrderYuan)],
+        ['单均毛利', yuan(data.avgGrossYuan)],
+        ['投诉率', pct(data.complaintRate)],
+        ['估 CAC', cac == null ? '—' : yuan(cac)],
+      ];
+      document.getElementById('cards').innerHTML = items.map(([k,v]) =>
+        '<div class="bj-metric"><div class="k">' + k + '</div><div class="v">' + v + '</div></div>'
+      ).join('');
+
+      const d = data.decision || {};
+      let note = d.note || '';
+      if (cac != null && data.avgGrossYuan != null) {
+        note += cac < data.avgGrossYuan * 3
+          ? '；粗算 CAC 低于约 3 个月单均毛利贡献。'
+          : '；粗算 CAC 偏高，需压获客或提客单。';
+      }
+      document.getElementById('decision').textContent =
+        (d.continueOk ? '【倾向继续同城扩量】' : '【尚未达标 / 保持验证】') + ' ' + note;
+      document.getElementById('stops').innerHTML =
+        (d.stopTriggers || []).map(s => '<li>' + s + '</li>').join('');
+    }
+
+    document.getElementById('reload').onclick = () => load();
+    load();
+  </script>
+</body>
+</html>

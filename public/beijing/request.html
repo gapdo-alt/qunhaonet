@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>北京开锁水管电路报修 - 群号</title>
+  <meta name="description" content="北京试点圈层内开锁、水管、电路小修报修。提交需求后由已建档师傅接单，可追踪售后。">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/style.css?v=20260811bj">
+</head>
+<body>
+  <header class="site">
+    <a class="logo" href="/">群<span>号</span></a>
+    <nav>
+      <a href="/beijing">北京目录</a>
+      <a class="primary" href="/beijing">返回</a>
+    </nav>
+  </header>
+
+  <main class="page narrow">
+    <div class="card">
+      <h2 class="title">提交本地服务需求</h2>
+      <p style="color:var(--muted);font-size:14px;line-height:1.7;text-align:center;margin-bottom:8px">
+        试点服务圈层：朝阳 / 通州相邻带。请填写真实联系方式，便于派单。
+      </p>
+
+      <form id="reqForm">
+        <label for="category">品类</label>
+        <select id="category" name="category" required>
+          <option value="开锁">开锁</option>
+          <option value="水管">水管</option>
+          <option value="电路">电路</option>
+          <option value="其他">其他</option>
+        </select>
+
+        <label for="district">城区 / 圈层</label>
+        <input type="text" id="district" name="district" maxlength="40" placeholder="如：朝阳·望京" required>
+
+        <label for="addressHint">位置提示（勿写完整门牌）</label>
+        <input type="text" id="addressHint" name="addressHint" maxlength="80" placeholder="小区名或街道即可">
+
+        <label for="contactName">称呼</label>
+        <input type="text" id="contactName" name="contactName" maxlength="40" required>
+
+        <label for="contactPhone">电话</label>
+        <input type="tel" id="contactPhone" name="contactPhone" maxlength="20" required>
+
+        <label for="description">需求说明</label>
+        <textarea id="description" name="description" maxlength="1000" rows="4" required placeholder="故障现象、是否紧急、方便上门时段"></textarea>
+
+        <label for="source">从哪里来</label>
+        <select id="source" name="source">
+          <option value="web">网站</option>
+          <option value="group">微信群</option>
+          <option value="seo">搜索</option>
+          <option value="referral">朋友介绍</option>
+        </select>
+
+        <button type="submit" class="block" id="submitBtn">提交需求</button>
+        <p class="msg" id="msg"></p>
+      </form>
+    </div>
+  </main>
+
+  <footer class="site"><a href="/beijing" style="color:inherit">返回北京站</a></footer>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    if (params.get('source') && ['web','group','seo','referral'].includes(params.get('source'))) {
+      document.getElementById('source').value = params.get('source');
+    }
+    if (params.get('cat') && ['开锁','水管','电路','其他'].includes(params.get('cat'))) {
+      document.getElementById('category').value = params.get('cat');
+    }
+
+    document.getElementById('reqForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const msg = document.getElementById('msg');
+      const btn = document.getElementById('submitBtn');
+      msg.className = 'msg';
+      msg.textContent = '';
+      btn.disabled = true;
+      try {
+        const body = {
+          category: document.getElementById('category').value,
+          district: document.getElementById('district').value.trim(),
+          addressHint: document.getElementById('addressHint').value.trim(),
+          contactName: document.getElementById('contactName').value.trim(),
+          contactPhone: document.getElementById('contactPhone').value.trim(),
+          description: document.getElementById('description').value.trim(),
+          source: document.getElementById('source').value,
+        };
+        const res = await fetch('/api/beijing/requests', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || '提交失败');
+        msg.className = 'msg ok';
+        msg.textContent = '已提交，我们会尽快联系你。编号：' + data.id.slice(0, 8);
+        e.target.reset();
+        if (params.get('source')) document.getElementById('source').value = params.get('source');
+      } catch (err) {
+        msg.className = 'msg error';
+        msg.textContent = err.message || '提交失败';
+      } finally {
+        btn.disabled = false;
+      }
+    };
+  </script>
+</body>
+</html>

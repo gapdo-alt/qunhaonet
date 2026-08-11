@@ -14,6 +14,7 @@ export function isNumericCode(code: unknown): boolean {
 const RESERVED = new Set([
   'api', 'admin', 'dashboard', 'login', 'register', 'intro', 'owner',
   'i', 'a', 'assets', 'favicon', 'index', 'qunhao', 'www', '404',
+  'beijing',
 ]);
 
 export function isReserved(segment: string): boolean {

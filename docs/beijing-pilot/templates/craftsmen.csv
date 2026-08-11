@@ -1,0 +1,4 @@
+name,phone,categories,districts,id_verified,notes,status
+张师傅,13800000001,"开锁","朝阳",yes,可夜间紧急,active
+李师傅,13800000002,"水管,电路","朝阳,通州",yes,小修为主,active
+王师傅,13800000003,"水管","通州",no,待补实名,paused

@@ -154,6 +154,19 @@ Dashboard → Workers & Pages → qunhao → Custom domains → 添加 `qunhao.n
 - [ ] 填写微信号 + 上传微信二维码后，`/owner/{code}` 正确展示
 - [ ] 第二个账号无法上传到他人群号（403）
 
+## 北京单城试点
+
+产品与运营说明见 [`docs/beijing-pilot/README.md`](docs/beijing-pilot/README.md)。
+
+```bash
+npm run db:beijing:local
+npx wrangler d1 execute qunhao-db --local --file=./schema-beijing-craftsmen-seed.sql
+npm run dev
+# 打开 /beijing 、/beijing/request ；管理员访问 /beijing/ops 、/beijing/metrics
+```
+
+静态入口：`/beijing` 目录与报修；SEO：`/beijing/xiaoqu`、`/beijing/kaiguan`、`/beijing/game`。
+
 ## 免费层注意事项
 
 | 资源 | 免费额度 | 说明 |
